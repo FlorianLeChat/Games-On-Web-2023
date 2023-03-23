@@ -14,9 +14,6 @@ async function startGame()
 	engine = new BABYLON.Engine( canvas, true );
 	scene = await createScene();
 
-	// enable physics
-	scene.enablePhysics();
-
 	// modify some default settings (i.e pointer events to prevent cursor to go
 	// out of the game window)
 	modifySettings();
@@ -42,7 +39,10 @@ async function createScene()
 {
 	const scene = new BABYLON.Scene( engine );
 
-	createGround( scene );
+	// enable physics
+	scene.enablePhysics();
+
+	await createGround( scene );
 	createFreeCamera( scene );
 
 	const tank = await createTank( scene ); // Source : https://clara.io/view/73ee908d-1727-4246-8f89-3b2bcbf831d4
@@ -55,8 +55,8 @@ async function createScene()
 	createLights( scene );
 
 	// Création des personnages.
-	createHeroDude( scene );
-	createGuys( scene );
+	await createHeroDude( scene );
+	await createGuys( scene );
 
 	return scene;
 }
@@ -65,52 +65,60 @@ function createGuys( scene )
 {
 	// Fonction pour créer les modèles "Guys" (hommes).
 	// Le code est héritée de la fonction "createHeroDude" sans les commentaires.
-	BABYLON.SceneLoader.ImportMesh( "", "models/", "guy.babylon", scene, ( newMeshes, _particleSystems, skeletons ) =>
+	return new Promise( resolve =>
 	{
-		const guy = newMeshes[ 0 ];
-		guy.position = new BABYLON.Vector3( 0, 0, 5 );
-		guy.name = "guy";
-
-		const skeleton = skeletons[ 0 ];
-		const walkRange = skeleton.getAnimationRange( "YBot_Walk" );
-
-		scene.beginAnimation( skeleton, walkRange.from, walkRange.to, true );
-
-		new Guy( guy, -1, 0.1, 0.2, scene );
-
-		scene.guys = [];
-
-		for ( let i = 0; i < 3; i++ )
+		BABYLON.SceneLoader.ImportMesh( "", "models/", "guy.babylon", scene, ( newMeshes, _particleSystems, skeletons ) =>
 		{
-			scene.guys[ i ] = doClone( guy, skeletons, i );
-			scene.beginAnimation( scene.guys[ i ].skeleton, walkRange.from, walkRange.to, true );
+			const guy = newMeshes[ 0 ];
+			guy.position = new BABYLON.Vector3( 0, 0, 5 );
+			guy.name = "guy";
 
-			new Guy( scene.guys[ i ], i, 0.3, 0.2, scene );
-		}
+			const skeleton = skeletons[ 0 ];
+			const walkRange = skeleton.getAnimationRange( "YBot_Walk" );
 
-		scene.guys.push( guy );
+			scene.beginAnimation( skeleton, walkRange.from, walkRange.to, true );
+
+			new Guy( guy, -1, 0.1, 0.2, scene );
+
+			scene.guys = [];
+
+			for ( let i = 0; i < 3; i++ )
+			{
+				scene.guys[ i ] = doClone( guy, skeletons, i );
+				scene.beginAnimation( scene.guys[ i ].skeleton, walkRange.from, walkRange.to, true );
+
+				new Guy( scene.guys[ i ], i, 0.3, 0.2, scene );
+			}
+
+			scene.guys.push( guy );
+
+			resolve();
+		} );
 	} );
 }
 
 function createGround( scene )
 {
-	const groundOptions = { width: 2000, height: 2000, subdivisions: 20, minHeight: 0, maxHeight: 100, onReady: onGroundCreated };
-	//scene is optional and defaults to the current scene
-	const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap( "gdhm", 'images/hmap1.png', groundOptions, scene );
-
-	function onGroundCreated()
+	return new Promise( resolve =>
 	{
-		const groundMaterial = new BABYLON.StandardMaterial( "groundMaterial", scene );
-		groundMaterial.diffuseTexture = new BABYLON.Texture( "images/snow.jpeg" );
-		ground.material = groundMaterial;
-		// to be taken into account by collision detection
-		ground.checkCollisions = true;
+		const groundOptions = { width: 2000, height: 2000, subdivisions: 20, minHeight: 0, maxHeight: 100, onReady: onGroundCreated };
+		//scene is optional and defaults to the current scene
+		const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap( "gdhm", 'images/hmap1.png', groundOptions, scene );
 
-		// for physic engine
-		ground.physicsImpostor = new BABYLON.PhysicsImpostor( ground,
-			BABYLON.PhysicsImpostor.HeightmapImpostor, { mass: 0 }, scene );
-	}
-	return ground;
+		function onGroundCreated()
+		{
+			const groundMaterial = new BABYLON.StandardMaterial( "groundMaterial", scene );
+			groundMaterial.diffuseTexture = new BABYLON.Texture( "images/snow.jpeg" );
+			ground.material = groundMaterial;
+			// to be taken into account by collision detection
+			ground.checkCollisions = true;
+
+			// for physic engine
+			ground.physicsImpostor = new BABYLON.PhysicsImpostor( ground, BABYLON.PhysicsImpostor.HeightmapImpostor, { mass: 0 }, scene );
+
+			resolve( ground );
+		}
+	} );
 }
 
 function createLights( scene )
@@ -253,8 +261,7 @@ function createTank( scene )
 				cannonball.position.addInPlace( this.frontVector.multiplyByFloats( 5, 5, 5 ) );
 
 				// add physics to the cannonball, mass must be non null to see gravity apply
-				cannonball.physicsImpostor = new BABYLON.PhysicsImpostor( cannonball,
-					BABYLON.PhysicsImpostor.SphereImpostor, { mass: 1 }, scene );
+				cannonball.physicsImpostor = new BABYLON.PhysicsImpostor( cannonball, BABYLON.PhysicsImpostor.SphereImpostor, { mass: 1 }, scene );
 
 				// the cannonball needs to be fired, so we need an impulse !
 				// we apply it to the center of the sphere
@@ -374,41 +381,46 @@ function createTank( scene )
 
 function createHeroDude( scene )
 {
-	// load the Dude 3D animated model
-	// name, folder, skeleton name
-	BABYLON.SceneLoader.ImportMesh( "him", "models/Dude/", "Dude.babylon", scene, ( newMeshes, _particleSystems, skeletons ) =>
+	return new Promise( resolve =>
 	{
-		const heroDude = newMeshes[ 0 ];
-		heroDude.position = new BABYLON.Vector3( 0, 0, 50 );  // The original dude
-
-		// give it a name so that we can query the scene to get it by name
-		heroDude.name = "heroDude";
-
-		// there might be more than one skeleton in an imported animated model. Try console.log(skeletons.length)
-		// here we've got only 1.
-		// animation parameters are skeleton, starting frame, ending frame,  a boolean that indicate if we're gonna
-		// loop the animation, speed,
-		scene.beginAnimation( skeletons[ 0 ], 0, 120, true, 1 );
-
-		// params = id, speed, scaling, scene
-		new Dude( heroDude, -1, 0.1, 0.2, scene );
-
-		// make clones
-		scene.dudes = [];
-		for ( let i = 0; i < 3; i++ )
+		// load the Dude 3D animated model
+		// name, folder, skeleton name
+		BABYLON.SceneLoader.ImportMesh( "him", "models/Dude/", "Dude.babylon", scene, ( newMeshes, _particleSystems, skeletons ) =>
 		{
-			scene.dudes[ i ] = doClone( heroDude, skeletons, i );
-			scene.beginAnimation( scene.dudes[ i ].skeleton, 0, 120, true, 1 );
+			const heroDude = newMeshes[ 0 ];
+			heroDude.position = new BABYLON.Vector3( 0, 0, 50 );  // The original dude
 
-			// Create instance with move method etc.
-			// params = speed, scaling, scene
-			new Dude( scene.dudes[ i ], i, 0.3, 0.2, scene );
-			// remember that the instances are attached to the meshes
-			// and the meshes have a property "Dude" that IS the instance
-			// see render loop then....
-		}
-		scene.dudes.push( heroDude );
+			// give it a name so that we can query the scene to get it by name
+			heroDude.name = "heroDude";
 
+			// there might be more than one skeleton in an imported animated model. Try console.log(skeletons.length)
+			// here we've got only 1.
+			// animation parameters are skeleton, starting frame, ending frame,  a boolean that indicate if we're gonna
+			// loop the animation, speed,
+			scene.beginAnimation( skeletons[ 0 ], 0, 120, true, 1 );
+
+			// params = id, speed, scaling, scene
+			new Dude( heroDude, -1, 0.1, 0.2, scene );
+
+			// make clones
+			scene.dudes = [];
+			for ( let i = 0; i < 3; i++ )
+			{
+				scene.dudes[ i ] = doClone( heroDude, skeletons, i );
+				scene.beginAnimation( scene.dudes[ i ].skeleton, 0, 120, true, 1 );
+
+				// Create instance with move method etc.
+				// params = speed, scaling, scene
+				new Dude( scene.dudes[ i ], i, 0.3, 0.2, scene );
+				// remember that the instances are attached to the meshes
+				// and the meshes have a property "Dude" that IS the instance
+				// see render loop then....
+			}
+
+			scene.dudes.push( heroDude );
+
+			resolve();
+		} );
 	} );
 }
 
