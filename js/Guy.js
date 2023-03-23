@@ -5,15 +5,11 @@ export default class Guy
 {
 	constructor( guyMesh, id, speed, scaling, scene )
 	{
-		this.guyMesh = guyMesh;
 		this.id = id;
 		this.scene = scene;
+		this.speed = speed ?? 1;
 		this.scaling = scaling;
-
-		if ( speed )
-			this.speed = speed;
-		else
-			this.speed = 1;
+		this.guyMesh = guyMesh;
 
 		// in case, attach the instance to the mesh itself, in case we need to retrieve
 		// it after a scene.getMeshByName that would return the Mesh
@@ -43,8 +39,7 @@ export default class Guy
 
 		// let's put the guy at the BBox position. in the rest of this
 		// method, we will not move the guy but the BBox instead
-		this.guyMesh.position = new BABYLON.Vector3( this.bounder.position.x,
-			this.bounder.position.y, this.bounder.position.z );
+		this.guyMesh.position = new BABYLON.Vector3( this.bounder.position.x, this.bounder.position.y, this.bounder.position.z );
 
 		// follow the tank
 		let tank = scene.getMeshByName( "heroTank" );
@@ -57,8 +52,6 @@ export default class Guy
 		// angle between Guy and tank, to set the new rotation.y of the Guy so that he will look towards the tank
 		// make a drawing in the X/Z plan to uderstand....
 		let alpha = Math.atan2( -dir.x, -dir.z );
-		// If I uncomment this, there are collisions. This is strange ?
-		//this.bounder.rotation.y = alpha;
 
 		this.guyMesh.rotation.y = alpha;
 
@@ -66,13 +59,8 @@ export default class Guy
 		// first let's move the bounding box mesh
 		if ( distance > 30 )
 		{
-			//a.restart();
 			// Move the bounding box instead of the guy....
 			this.bounder.moveWithCollisions( direction.normalize().multiplyByFloats( this.speed, this.speed, this.speed ) );
-		}
-		else
-		{
-			//a.pause();
 		}
 	}
 
@@ -127,8 +115,6 @@ export default class Guy
 		bounder.scaling.x = ( max._x - min._x ) * this.scaling;
 		bounder.scaling.y = ( max._y - min._y ) * this.scaling * 2;
 		bounder.scaling.z = ( max._z - min._z ) * this.scaling * 3;
-
-		//bounder.isVisible = false;
 
 		return bounder;
 	}

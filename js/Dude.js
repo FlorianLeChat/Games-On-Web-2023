@@ -5,16 +5,12 @@ export default class Dude
 {
 	constructor( dudeMesh, id, speed, scaling, scene )
 	{
-		this.dudeMesh = dudeMesh;
 		this.id = id;
-		this.positionId = 0;
 		this.scene = scene;
+		this.speed = speed ?? 1;
 		this.scaling = scaling;
-
-		if ( speed )
-			this.speed = speed;
-		else
-			this.speed = 1;
+		this.dudeMesh = dudeMesh;
+		this.positionId = 0;
 
 		// in case, attach the instance to the mesh itself, in case we need to retrieve
 		// it after a scene.getMeshByName that would return the Mesh
@@ -131,8 +127,6 @@ export default class Dude
 		bounder.scaling.x = ( max._x - min._x ) * this.scaling;
 		bounder.scaling.y = ( max._y - min._y ) * this.scaling * 2;
 		bounder.scaling.z = ( max._z - min._z ) * this.scaling * 3;
-
-		//bounder.isVisible = false;
 
 		return bounder;
 	}

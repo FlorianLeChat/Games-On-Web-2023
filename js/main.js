@@ -1,6 +1,5 @@
 import Guy from "./Guy.js";
 import Dude from "./Dude.js";
-import Rabbit from "./Rabbit.js";
 
 let canvas;
 let engine;
@@ -27,13 +26,12 @@ async function startGame()
 		let tank = scene.getMeshByName( "heroTank" );
 		if ( !tank ) return;
 
-		let deltaTime = engine.getDeltaTime(); // remind you something ?
+		engine.getDeltaTime(); // remind you something ?
 
 		tank.move();
 		tank.fireCannonBalls(); // will fire only if space is pressed !
 		tank.fireLasers();      // will fire only if l is pressed !
 
-		//moveHeroDude();
 		moveOtherDudes();
 
 		scene.render();
@@ -43,8 +41,9 @@ async function startGame()
 async function createScene()
 {
 	let scene = new BABYLON.Scene( engine );
-	let ground = createGround( scene );
-	let freeCamera = createFreeCamera( scene );
+
+	createGround( scene );
+	createFreeCamera( scene );
 
 	let tank = await createTank( scene ); // Source : https://clara.io/view/73ee908d-1727-4246-8f89-3b2bcbf831d4
 
@@ -56,37 +55,10 @@ async function createScene()
 	createLights( scene );
 
 	// Création des personnages.
-	createHeroDude( scene ); // Les personnages utilisant le modèle "Dude".
-	// createRabbits( scene ); // Les personnages utilisant le modèle "Rabbit" (l'animation est un poil étrange...).
-	// createCandles( scene ); // Non fonctionnel (aucune animation).
-	createGuys( scene ); // Non fonctionnel (aucune animation + taille excessivement petite).
+	createHeroDude( scene );
+	createGuys( scene );
 
 	return scene;
-}
-
-function createCandles( scene )
-{
-	// Fonction pour créer les modèles "Candles" (bougies).
-	// Le code est héritée de la fonction "createHeroDude" sans les commentaires.
-	BABYLON.SceneLoader.ImportMesh( "", "models/", "candle.babylon", scene, ( newMeshes, particleSystems, skeletons ) =>
-	{
-		let candle = newMeshes[ 0 ];
-		candle.position = new BABYLON.Vector3( 0, 0, 5 );
-		candle.name = "candle";
-
-		new Dude( candle, -1, 0.1, 0.2, scene );
-
-		scene.candles = [];
-
-		for ( let i = 0; i < 3; i++ )
-		{
-			scene.candles[ i ] = doClone( candle, skeletons, i );
-
-			new Dude( scene.candles[ i ], i, 0.3, 0.2, scene );
-		}
-
-		scene.candles.push( candle );
-	} );
 }
 
 function createGuys( scene )
@@ -120,34 +92,6 @@ function createGuys( scene )
 	} );
 }
 
-function createRabbits( scene )
-{
-	// Fonction pour créer les modèles "Rabbits" (lapins).
-	// Le code est héritée de la fonction "createHeroDude" sans les commentaires.
-	BABYLON.SceneLoader.ImportMesh( "", "models/Rabbit/", "rabbit.babylon", scene, ( newMeshes, particleSystems, skeletons ) =>
-	{
-		let rabbit = newMeshes[ 0 ];
-		rabbit.position = new BABYLON.Vector3( 50, 0, 50 );
-		rabbit.name = "rabbit";
-
-		scene.beginAnimation( skeletons[ 0 ], 0, 120, true, 1 );
-
-		new Rabbit( rabbit, -1, 0.1, 0.2, scene );
-
-		scene.rabbits = [];
-
-		for ( let i = 0; i < 5; i++ )
-		{
-			scene.rabbits[ i ] = doClone( rabbit, skeletons, i );
-			scene.beginAnimation( scene.rabbits[ i ].skeleton, 0, 120, true, 1 );
-
-			new Rabbit( scene.rabbits[ i ], i, 0.3, 0.2, scene );
-		}
-
-		scene.rabbits.push( rabbit );
-	} );
-}
-
 function createGround( scene )
 {
 	const groundOptions = { width: 2000, height: 2000, subdivisions: 20, minHeight: 0, maxHeight: 100, onReady: onGroundCreated };
@@ -161,7 +105,6 @@ function createGround( scene )
 		ground.material = groundMaterial;
 		// to be taken into account by collision detection
 		ground.checkCollisions = true;
-		//groundMaterial.wireframe=true;
 
 		// for physic engine
 		ground.physicsImpostor = new BABYLON.PhysicsImpostor( ground,
@@ -173,8 +116,7 @@ function createGround( scene )
 function createLights( scene )
 {
 	// i.e sun light with all light rays parallels, the vector is the direction.
-	let light0 = new BABYLON.HemisphericLight( "light", new BABYLON.Vector3( 0, 1, 0 ), scene );
-
+	new BABYLON.HemisphericLight( "light", new BABYLON.Vector3( 0, 1, 0 ), scene );
 }
 
 function createFreeCamera( scene )
@@ -239,12 +181,8 @@ function createTank( scene )
 
 			tank.move = () =>
 			{
-				//tank.position.z += -1; // speed should be in unit/s, and depends on
-				// deltaTime !
-
 				// if we want to move while taking into account collision detections
 				// collision uses by default "ellipsoids"
-
 				let yMovement = 0;
 
 				if ( tank.position.y > 2 )
@@ -252,13 +190,11 @@ function createTank( scene )
 					zMovement = 0;
 					yMovement = -2;
 				}
-				//tank.moveWithCollisions(new BABYLON.Vector3(0, yMovement, zMovement));
 
 				if ( inputStates.up )
 				{
 					meshes.forEach( ( mesh ) =>
 					{
-						//mesh.moveWithCollisions(new BABYLON.Vector3(0, 0, 1*tank.speed));
 						mesh.moveWithCollisions( tank.frontVector.multiplyByFloats( tank.speed, tank.speed, tank.speed ) );
 					} );
 				}
@@ -266,7 +202,6 @@ function createTank( scene )
 				{
 					meshes.forEach( ( mesh ) =>
 					{
-						//mesh.moveWithCollisions(new BABYLON.Vector3(0, 0, -1*tank.speed));
 						mesh.moveWithCollisions( tank.frontVector.multiplyByFloats( -tank.speed, -tank.speed, -tank.speed ) );
 					} );
 				}
@@ -274,7 +209,6 @@ function createTank( scene )
 				{
 					meshes.forEach( ( mesh ) =>
 					{
-						//mesh.moveWithCollisions(new BABYLON.Vector3(-1*tank.speed, 0, 0));
 						mesh.rotation.y -= 0.02;
 						mesh.frontVector = new BABYLON.Vector3( Math.sin( tank.rotation.y ), 0, Math.cos( tank.rotation.y ) );
 					} );
@@ -283,7 +217,6 @@ function createTank( scene )
 				{
 					meshes.forEach( ( mesh ) =>
 					{
-						//mesh.moveWithCollisions(new BABYLON.Vector3(1*tank.speed, 0, 0));
 						mesh.rotation.y += 0.02;
 						mesh.frontVector = new BABYLON.Vector3( Math.sin( tank.rotation.y ), 0, Math.cos( tank.rotation.y ) );
 					} );
@@ -297,7 +230,6 @@ function createTank( scene )
 			tank.fireCannonBalls = function ()
 			{
 				if ( !inputStates.space ) return;
-
 				if ( !this.canFireCannonBalls ) return;
 
 				// ok, we fire, let's put the above property to false
@@ -353,44 +285,6 @@ function createTank( scene )
 					} );
 				}
 
-				if ( scene.candles )
-				{
-					// Modèles "Candle".
-					scene.candles.forEach( actor =>
-					{
-						cannonball.actionManager.registerAction( new BABYLON.ExecuteCodeAction(
-							{
-								trigger: BABYLON.ActionManager.OnIntersectionEnterTrigger,
-								parameter: actor.Candle.bounder
-							},
-							() =>
-							{
-								actor.Candle.bounder.dispose();
-								actor.dispose();
-							}
-						) );
-					} );
-				}
-
-				if ( scene.rabbits )
-				{
-					// Modèles "Rabbit".
-					scene.rabbits.forEach( actor =>
-					{
-						cannonball.actionManager.registerAction( new BABYLON.ExecuteCodeAction(
-							{
-								trigger: BABYLON.ActionManager.OnIntersectionEnterTrigger,
-								parameter: actor.Rabbit.bounder
-							},
-							() =>
-							{
-								actor.Rabbit.bounder.dispose();
-								actor.dispose();
-							}
-						) );
-					} );
-				}
-
 				if ( scene.guys )
 				{
 					// Modèles "Guy".
@@ -425,7 +319,6 @@ function createTank( scene )
 			{
 				// is the l key pressed ?
 				if ( !inputStates.laser ) return;
-
 				if ( !this.canFireLasers ) return;
 
 				// ok, we fire, let's put the above property to false
@@ -437,10 +330,8 @@ function createTank( scene )
 					this.canFireLasers = true;
 				}, 1000 * this.fireLasersAfter );
 
-				//console.log("create ray")
 				// create a ray
 				let origin = this.position; // position of the tank
-				//let origin = this.position.add(this.frontVector);
 
 				// Looks a little up (0.1 in y)
 				let direction = new BABYLON.Vector3( this.frontVector.x, this.frontVector.y + 0.01, this.frontVector.z );
@@ -457,30 +348,19 @@ function createTank( scene )
 					rayHelper.hide( ray );
 				}, 200 );
 
-				// what did the ray touched?
-				/*
-				let pickInfo = scene.pickWithRay(ray);
-				// see what has been "picked" by the ray
-				console.log(pickInfo);
-				*/
-
 				// See also multiPickWithRay if you want to kill "through" multiple objects
 				// this would return an array of boundingBoxes.... instead of one.
-
 				let pickInfo = scene.pickWithRay( ray, ( mesh ) =>
 				{
-					/*
-					if((mesh.name === "heroTank")|| ((mesh.name === "ray"))) return false;
-					return true;
-					*/
 					return ( mesh.name.startsWith( "bounder" ) );
 				} );
 
 				if ( pickInfo.pickedMesh )
-				{ // sometimes it's null for whatever reason...?
+				{
+					// sometimes it's null for whatever reason...?
 					// the mesh is a bounding box of a dude
-					console.log( pickInfo.pickedMesh.name );
 					let bounder = pickInfo.pickedMesh;
+
 					// let's make the bounder and the dude disappear
 					bounder.dudeMesh.dispose();
 					bounder.dispose();
@@ -500,8 +380,6 @@ function createHeroDude( scene )
 	{
 		let heroDude = newMeshes[ 0 ];
 		heroDude.position = new BABYLON.Vector3( 0, 0, 50 );  // The original dude
-		// make it smaller
-		//heroDude.speed = 0.1;
 
 		// give it a name so that we can query the scene to get it by name
 		heroDude.name = "heroDude";
@@ -510,10 +388,10 @@ function createHeroDude( scene )
 		// here we've got only 1.
 		// animation parameters are skeleton, starting frame, ending frame,  a boolean that indicate if we're gonna
 		// loop the animation, speed,
-		let a = scene.beginAnimation( skeletons[ 0 ], 0, 120, true, 1 );
+		scene.beginAnimation( skeletons[ 0 ], 0, 120, true, 1 );
 
 		// params = id, speed, scaling, scene
-		let hero = new Dude( heroDude, -1, 0.1, 0.2, scene );
+		new Dude( heroDude, -1, 0.1, 0.2, scene );
 
 		// make clones
 		scene.dudes = [];
@@ -524,7 +402,7 @@ function createHeroDude( scene )
 
 			// Create instance with move method etc.
 			// params = speed, scaling, scene
-			var temp = new Dude( scene.dudes[ i ], i, 0.3, 0.2, scene );
+			new Dude( scene.dudes[ i ], i, 0.3, 0.2, scene );
 			// remember that the instances are attached to the meshes
 			// and the meshes have a property "Dude" that IS the instance
 			// see render loop then....
@@ -551,13 +429,15 @@ function doClone( originalMesh, skeletons, id )
 	{
 		myClone.skeleton = skeletons[ 0 ].clone( "clone_" + id + "_skeleton" );
 		return myClone;
-	} else
+	}
+	else
 	{
 		if ( skeletons.length === 1 )
 		{
 			// the skeleton controls/animates all children, like in the Dude model
 			let clonedSkeleton = skeletons[ 0 ].clone( "clone_" + id + "_skeleton" );
 			myClone.skeleton = clonedSkeleton;
+
 			let nbChildren = myClone.getChildren().length;
 
 			for ( let i = 0; i < nbChildren; i++ )
@@ -565,25 +445,20 @@ function doClone( originalMesh, skeletons, id )
 				myClone.getChildren()[ i ].skeleton = clonedSkeleton;
 			}
 			return myClone;
-		} else if ( skeletons.length === originalMesh.getChildren().length )
+		}
+		else if ( skeletons.length === originalMesh.getChildren().length )
 		{
 			// each child has its own skeleton
 			for ( let i = 0; i < myClone.getChildren().length; i++ )
 			{
 				myClone.getChildren()[ i ].skeleton = skeletons[ i ].clone( "clone_" + id + "_skeleton_" + i );
 			}
+
 			return myClone;
 		}
 	}
 
 	return myClone;
-}
-
-function moveHeroDude()
-{
-	let heroDude = scene.getMeshByName( "heroDude" );
-	if ( heroDude )
-		heroDude.Dude.move( scene );
 }
 
 function moveOtherDudes()
@@ -603,14 +478,6 @@ function moveOtherDudes()
 			scene.guys[ i ].Guy.move( scene );
 		}
 	}
-
-	if ( scene.rabbits )
-	{
-		for ( var i = 0; i < scene.rabbits.length; i++ )
-		{
-			scene.rabbits[ i ].Rabbit.move( scene );
-		}
-	}
 }
 
 window.addEventListener( "resize", () =>
@@ -626,11 +493,7 @@ function modifySettings()
 	{
 		if ( !scene.alreadyLocked )
 		{
-			console.log( "requesting pointer lock" );
 			canvas.requestPointerLock();
-		} else
-		{
-			console.log( "Pointer already locked" );
 		}
 	};
 
@@ -661,19 +524,24 @@ function modifySettings()
 		if ( ( event.key === "ArrowLeft" ) || ( event.key === "q" ) || ( event.key === "Q" ) )
 		{
 			inputStates.left = true;
-		} else if ( ( event.key === "ArrowUp" ) || ( event.key === "z" ) || ( event.key === "Z" ) )
+		}
+		else if ( ( event.key === "ArrowUp" ) || ( event.key === "z" ) || ( event.key === "Z" ) )
 		{
 			inputStates.up = true;
-		} else if ( ( event.key === "ArrowRight" ) || ( event.key === "d" ) || ( event.key === "D" ) )
+		}
+		else if ( ( event.key === "ArrowRight" ) || ( event.key === "d" ) || ( event.key === "D" ) )
 		{
 			inputStates.right = true;
-		} else if ( ( event.key === "ArrowDown" ) || ( event.key === "s" ) || ( event.key === "S" ) )
+		}
+		else if ( ( event.key === "ArrowDown" ) || ( event.key === "s" ) || ( event.key === "S" ) )
 		{
 			inputStates.down = true;
-		} else if ( event.key === " " )
+		}
+		else if ( event.key === " " )
 		{
 			inputStates.space = true;
-		} else if ( ( event.key === "l" ) || ( event.key === "L" ) )
+		}
+		else if ( ( event.key === "l" ) || ( event.key === "L" ) )
 		{
 			inputStates.laser = true;
 		}
@@ -685,19 +553,24 @@ function modifySettings()
 		if ( ( event.key === "ArrowLeft" ) || ( event.key === "q" ) || ( event.key === "Q" ) )
 		{
 			inputStates.left = false;
-		} else if ( ( event.key === "ArrowUp" ) || ( event.key === "z" ) || ( event.key === "Z" ) )
+		}
+		else if ( ( event.key === "ArrowUp" ) || ( event.key === "z" ) || ( event.key === "Z" ) )
 		{
 			inputStates.up = false;
-		} else if ( ( event.key === "ArrowRight" ) || ( event.key === "d" ) || ( event.key === "D" ) )
+		}
+		else if ( ( event.key === "ArrowRight" ) || ( event.key === "d" ) || ( event.key === "D" ) )
 		{
 			inputStates.right = false;
-		} else if ( ( event.key === "ArrowDown" ) || ( event.key === "s" ) || ( event.key === "S" ) )
+		}
+		else if ( ( event.key === "ArrowDown" ) || ( event.key === "s" ) || ( event.key === "S" ) )
 		{
 			inputStates.down = false;
-		} else if ( event.key === " " )
+		}
+		else if ( event.key === " " )
 		{
 			inputStates.space = false;
-		} else if ( ( event.key === "l" ) || ( event.key === "L" ) )
+		}
+		else if ( ( event.key === "l" ) || ( event.key === "L" ) )
 		{
 			inputStates.laser = false;
 		}
