@@ -21,7 +21,6 @@ export default class Dude
 		this.dudeMesh.scaling = new BABYLON.Vector3( 0.2, 0.2, 0.2 );
 
 		// FOR COLLISIONS, let's associate a BoundingBox to the Dude
-
 		// singleton, static property, computed only for the first dude we constructed
 		// for others, we will reuse this property.
 		if ( Dude.boundingBoxParameters == undefined )

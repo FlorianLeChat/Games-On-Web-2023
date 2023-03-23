@@ -20,7 +20,6 @@ export default class Guy
 		this.guyMesh.scaling = new BABYLON.Vector3( 6, 6, 6 );
 
 		// FOR COLLISIONS, let's associate a BoundingBox to the guy
-
 		// singleton, static property, computed only for the first guy we constructed
 		// for others, we will reuse this property.
 		if ( Guy.boundingBoxParameters == undefined )
@@ -46,12 +45,11 @@ export default class Guy
 		// let's compute the direction vector that goes from Guy to the tank
 		const direction = tank.position.subtract( this.guyMesh.position );
 		const distance = direction.length(); // we take the vector that is not normalized, not the dir vector
-		const opposite = direction.negate();
 
-		const dir = opposite.normalize();
+		const dir = direction.normalize();
 		// angle between Guy and tank, to set the new rotation.y of the Guy so that he will look towards the tank
 		// make a drawing in the X/Z plan to uderstand....
-		const alpha = Math.atan2( -dir.x, -dir.z );
+		const alpha = Math.atan2( dir.x, dir.z );
 
 		this.guyMesh.rotation.y = alpha;
 

@@ -45,10 +45,10 @@ async function createScene()
 	await createGround( scene );
 	createFreeCamera( scene );
 
-	const tank = await createTank( scene ); // Source : https://clara.io/view/73ee908d-1727-4246-8f89-3b2bcbf831d4
-
 	// second parameter is the target to follow
+	const tank = await createTank( scene ); // Source : https://clara.io/view/73ee908d-1727-4246-8f89-3b2bcbf831d4
 	const followCamera = createFollowCamera( scene, tank );
+
 	scene.activeCamera = followCamera;
 
 	// Création des lumières.
@@ -76,10 +76,9 @@ function createGuys( scene )
 			const skeleton = skeletons[ 0 ];
 			const walkRange = skeleton.getAnimationRange( "YBot_Walk" );
 
-			scene.beginAnimation( skeleton, walkRange.from, walkRange.to, true );
-
 			new Guy( guy, -1, 0.1, 0.2, scene );
 
+			scene.beginAnimation( skeleton, walkRange.from, walkRange.to, true );
 			scene.guys = [];
 
 			for ( let i = 0; i < 3; i++ )
@@ -103,7 +102,7 @@ function createGround( scene )
 	{
 		const groundOptions = { width: 2000, height: 2000, subdivisions: 20, minHeight: 0, maxHeight: 100, onReady: onGroundCreated };
 		//scene is optional and defaults to the current scene
-		const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap( "gdhm", 'images/hmap1.png', groundOptions, scene );
+		const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap( "gdhm", "images/hmap1.png", groundOptions, scene );
 
 		function onGroundCreated()
 		{
@@ -138,14 +137,14 @@ function createFreeCamera( scene )
 
 	// Add extra keys for camera movements
 	// Need the ascii code of the extra key(s). We use a string method here to get the ascii code
-	camera.keysUp.push( 'z'.charCodeAt( 0 ) );
-	camera.keysDown.push( 's'.charCodeAt( 0 ) );
-	camera.keysLeft.push( 'q'.charCodeAt( 0 ) );
-	camera.keysRight.push( 'd'.charCodeAt( 0 ) );
-	camera.keysUp.push( 'Z'.charCodeAt( 0 ) );
-	camera.keysDown.push( 'S'.charCodeAt( 0 ) );
-	camera.keysLeft.push( 'Q'.charCodeAt( 0 ) );
-	camera.keysRight.push( 'D'.charCodeAt( 0 ) );
+	camera.keysUp.push( "z".charCodeAt( 0 ) );
+	camera.keysDown.push( "s".charCodeAt( 0 ) );
+	camera.keysLeft.push( "q".charCodeAt( 0 ) );
+	camera.keysRight.push( "d".charCodeAt( 0 ) );
+	camera.keysUp.push( "Z".charCodeAt( 0 ) );
+	camera.keysDown.push( "S".charCodeAt( 0 ) );
+	camera.keysLeft.push( "Q".charCodeAt( 0 ) );
+	camera.keysRight.push( "D".charCodeAt( 0 ) );
 
 	return camera;
 }
@@ -455,6 +454,7 @@ function doClone( originalMesh, skeletons, id )
 			{
 				myClone.getChildren()[ i ].skeleton = clonedSkeleton;
 			}
+
 			return myClone;
 		}
 		else if ( skeletons.length === originalMesh.getChildren().length )
@@ -532,7 +532,7 @@ function modifySettings()
 	inputStates.laser = false;
 
 	//add the listener to the main, window object, and update the states
-	window.addEventListener( 'keydown', ( event ) =>
+	window.addEventListener( "keydown", ( event ) =>
 	{
 		if ( ( event.key === "ArrowLeft" ) || ( event.key === "q" ) || ( event.key === "Q" ) )
 		{
@@ -561,7 +561,7 @@ function modifySettings()
 	}, false );
 
 	//if the key will be released, change the states object
-	window.addEventListener( 'keyup', ( event ) =>
+	window.addEventListener( "keyup", ( event ) =>
 	{
 		if ( ( event.key === "ArrowLeft" ) || ( event.key === "q" ) || ( event.key === "Q" ) )
 		{
