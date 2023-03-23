@@ -42,16 +42,16 @@ export default class Guy
 		this.guyMesh.position = new BABYLON.Vector3( this.bounder.position.x, this.bounder.position.y, this.bounder.position.z );
 
 		// follow the tank
-		let tank = scene.getMeshByName( "heroTank" );
+		const tank = scene.getMeshByName( "heroTank" );
 		// let's compute the direction vector that goes from Guy to the tank
-		let direction = tank.position.subtract( this.guyMesh.position );
-		let distance = direction.length(); // we take the vector that is not normalized, not the dir vector
-		let opposite = direction.negate();
+		const direction = tank.position.subtract( this.guyMesh.position );
+		const distance = direction.length(); // we take the vector that is not normalized, not the dir vector
+		const opposite = direction.negate();
 
-		let dir = opposite.normalize();
+		const dir = opposite.normalize();
 		// angle between Guy and tank, to set the new rotation.y of the Guy so that he will look towards the tank
 		// make a drawing in the X/Z plan to uderstand....
-		let alpha = Math.atan2( -dir.x, -dir.z );
+		const alpha = Math.atan2( -dir.x, -dir.z );
 
 		this.guyMesh.rotation.y = alpha;
 
@@ -74,41 +74,41 @@ export default class Guy
 			childrenMeshes = [ this.guyMesh ];
 		}
 
-		let bbInfo = this.totalBoundingInfo( childrenMeshes );
-
-		return bbInfo;
+		return this.totalBoundingInfo( childrenMeshes );
 	}
 
 	// Taken from BabylonJS Playground example : https://www.babylonjs-playground.com/#QVIDL9#1
 	totalBoundingInfo( meshes )
 	{
-		var boundingInfo = meshes[ 0 ].getBoundingInfo();
-		var min = boundingInfo.minimum.add( meshes[ 0 ].position );
-		var max = boundingInfo.maximum.add( meshes[ 0 ].position );
-		for ( var i = 1; i < meshes.length; i++ )
+		let boundingInfo = meshes[ 0 ].getBoundingInfo();
+		let min = boundingInfo.minimum.add( meshes[ 0 ].position );
+		let max = boundingInfo.maximum.add( meshes[ 0 ].position );
+
+		for ( let i = 1; i < meshes.length; i++ )
 		{
 			boundingInfo = meshes[ i ].getBoundingInfo();
+
 			min = BABYLON.Vector3.Minimize( min, boundingInfo.minimum.add( meshes[ i ].position ) );
 			max = BABYLON.Vector3.Maximize( max, boundingInfo.maximum.add( meshes[ i ].position ) );
 		}
+
 		return new BABYLON.BoundingInfo( min, max );
 	}
 
 	createBoundingBox()
 	{
 		// Create a box as BoundingBox of the Guy
-		let bounder = new BABYLON.Mesh.CreateBox( "bounder" + ( this.id ).toString(), 1, this.scene );
-		let bounderMaterial = new BABYLON.StandardMaterial( "bounderMaterial", this.scene );
+		const bounder = new BABYLON.Mesh.CreateBox( "bounder" + ( this.id ).toString(), 1, this.scene );
+		const bounderMaterial = new BABYLON.StandardMaterial( "bounderMaterial", this.scene );
+
 		bounderMaterial.alpha = .4;
 		bounder.material = bounderMaterial;
+		bounder.position = this.guyMesh.position.clone();
 		bounder.checkCollisions = true;
 
-		bounder.position = this.guyMesh.position.clone();
-
-		let bbInfo = Guy.boundingBoxParameters;
-
-		let max = bbInfo.boundingBox.maximum;
-		let min = bbInfo.boundingBox.minimum;
+		const bbInfo = Guy.boundingBoxParameters;
+		const max = bbInfo.boundingBox.maximum;
+		const min = bbInfo.boundingBox.minimum;
 
 		// Not perfect, but kinda of works...
 		// Looks like collisions are computed on a box that has half the size... ?

@@ -10,7 +10,7 @@ window.onload = startGame;
 
 async function startGame()
 {
-	canvas = document.querySelector( "#myCanvas" );
+	canvas = document.querySelector( "canvas" );
 	engine = new BABYLON.Engine( canvas, true );
 	scene = await createScene();
 
@@ -23,7 +23,7 @@ async function startGame()
 
 	engine.runRenderLoop( () =>
 	{
-		let tank = scene.getMeshByName( "heroTank" );
+		const tank = scene.getMeshByName( "heroTank" );
 		if ( !tank ) return;
 
 		engine.getDeltaTime(); // remind you something ?
@@ -40,15 +40,15 @@ async function startGame()
 
 async function createScene()
 {
-	let scene = new BABYLON.Scene( engine );
+	const scene = new BABYLON.Scene( engine );
 
 	createGround( scene );
 	createFreeCamera( scene );
 
-	let tank = await createTank( scene ); // Source : https://clara.io/view/73ee908d-1727-4246-8f89-3b2bcbf831d4
+	const tank = await createTank( scene ); // Source : https://clara.io/view/73ee908d-1727-4246-8f89-3b2bcbf831d4
 
 	// second parameter is the target to follow
-	let followCamera = createFollowCamera( scene, tank );
+	const followCamera = createFollowCamera( scene, tank );
 	scene.activeCamera = followCamera;
 
 	// Création des lumières.
@@ -65,14 +65,14 @@ function createGuys( scene )
 {
 	// Fonction pour créer les modèles "Guys" (hommes).
 	// Le code est héritée de la fonction "createHeroDude" sans les commentaires.
-	BABYLON.SceneLoader.ImportMesh( "", "models/", "guy.babylon", scene, ( newMeshes, particleSystems, skeletons ) =>
+	BABYLON.SceneLoader.ImportMesh( "", "models/", "guy.babylon", scene, ( newMeshes, _particleSystems, skeletons ) =>
 	{
-		let guy = newMeshes[ 0 ];
+		const guy = newMeshes[ 0 ];
 		guy.position = new BABYLON.Vector3( 0, 0, 5 );
 		guy.name = "guy";
 
-		let skeleton = skeletons[ 0 ];
-		let walkRange = skeleton.getAnimationRange( "YBot_Walk" );
+		const skeleton = skeletons[ 0 ];
+		const walkRange = skeleton.getAnimationRange( "YBot_Walk" );
 
 		scene.beginAnimation( skeleton, walkRange.from, walkRange.to, true );
 
@@ -121,7 +121,7 @@ function createLights( scene )
 
 function createFreeCamera( scene )
 {
-	let camera = new BABYLON.FreeCamera( "freeCamera", new BABYLON.Vector3( 0, 50, 0 ), scene );
+	const camera = new BABYLON.FreeCamera( "freeCamera", new BABYLON.Vector3( 0, 50, 0 ), scene );
 	camera.attachControl( canvas );
 	// prevent camera to cross ground
 	camera.checkCollisions = true;
@@ -144,7 +144,7 @@ function createFreeCamera( scene )
 
 function createFollowCamera( scene, target )
 {
-	let camera = new BABYLON.FollowCamera( "tankFollowCamera", target.position, scene, target );
+	const camera = new BABYLON.FollowCamera( "tankFollowCamera", target.position, scene, target );
 
 	camera.radius = 40; // how far from the object to follow
 	camera.heightOffset = 14; // how high above the object to place the camera
@@ -162,7 +162,7 @@ function createTank( scene )
 	{
 		BABYLON.SceneLoader.ImportMesh( "", "models/Tank/", "Tank.babylon", scene, function ( meshes, particleSystems, skeletons )
 		{
-			let tank = meshes[ 0 ];
+			const tank = meshes[ 0 ];
 			tank.name = "heroTank";
 			tank.scaling = new BABYLON.Vector3( 2, 2, 2 );
 			tank.position = new BABYLON.Vector3( 0, 0, 0 );
@@ -242,11 +242,11 @@ function createTank( scene )
 				}, 1000 * this.fireCannonBallsAfter );
 
 				// Create a canonball
-				let cannonball = BABYLON.MeshBuilder.CreateSphere( "cannonball", { diameter: 2, segments: 32 }, scene );
+				const cannonball = BABYLON.MeshBuilder.CreateSphere( "cannonball", { diameter: 2, segments: 32 }, scene );
 				cannonball.material = new BABYLON.StandardMaterial( "Fire", scene );
 				cannonball.material.diffuseTexture = new BABYLON.Texture( "images/fire.jpg", scene );
 
-				let pos = this.position;
+				const pos = this.position;
 				// position the cannonball above the tank
 				cannonball.position = new BABYLON.Vector3( pos.x, pos.y + 1, pos.z );
 				// move cannonBall position from above the center of the tank to above a bit further than the frontVector end (5 meter s further)
@@ -258,9 +258,9 @@ function createTank( scene )
 
 				// the cannonball needs to be fired, so we need an impulse !
 				// we apply it to the center of the sphere
-				let powerOfFire = 100;
-				let azimuth = 0.1;
-				let aimForceVector = new BABYLON.Vector3( this.frontVector.x * powerOfFire, ( this.frontVector.y + azimuth ) * powerOfFire, this.frontVector.z * powerOfFire );
+				const powerOfFire = 100;
+				const azimuth = 0.1;
+				const aimForceVector = new BABYLON.Vector3( this.frontVector.x * powerOfFire, ( this.frontVector.y + azimuth ) * powerOfFire, this.frontVector.z * powerOfFire );
 
 				cannonball.physicsImpostor.applyImpulse( aimForceVector, cannonball.getAbsolutePosition() );
 				cannonball.actionManager = new BABYLON.ActionManager( scene );
@@ -331,15 +331,15 @@ function createTank( scene )
 				}, 1000 * this.fireLasersAfter );
 
 				// create a ray
-				let origin = this.position; // position of the tank
+				const origin = this.position; // position of the tank
 
 				// Looks a little up (0.1 in y)
-				let direction = new BABYLON.Vector3( this.frontVector.x, this.frontVector.y + 0.01, this.frontVector.z );
-				let length = 1000;
-				let ray = new BABYLON.Ray( origin, direction, length );
+				const direction = new BABYLON.Vector3( this.frontVector.x, this.frontVector.y + 0.01, this.frontVector.z );
+				const length = 1000;
+				const ray = new BABYLON.Ray( origin, direction, length );
 
 				// to make the ray visible :
-				let rayHelper = new BABYLON.RayHelper( ray );
+				const rayHelper = new BABYLON.RayHelper( ray );
 				rayHelper.show( scene, new BABYLON.Color3.Red );
 
 				// to make ray disappear after 200ms
@@ -350,7 +350,7 @@ function createTank( scene )
 
 				// See also multiPickWithRay if you want to kill "through" multiple objects
 				// this would return an array of boundingBoxes.... instead of one.
-				let pickInfo = scene.pickWithRay( ray, ( mesh ) =>
+				const pickInfo = scene.pickWithRay( ray, ( mesh ) =>
 				{
 					return ( mesh.name.startsWith( "bounder" ) );
 				} );
@@ -359,7 +359,7 @@ function createTank( scene )
 				{
 					// sometimes it's null for whatever reason...?
 					// the mesh is a bounding box of a dude
-					let bounder = pickInfo.pickedMesh;
+					const bounder = pickInfo.pickedMesh;
 
 					// let's make the bounder and the dude disappear
 					bounder.dudeMesh.dispose();
@@ -376,9 +376,9 @@ function createHeroDude( scene )
 {
 	// load the Dude 3D animated model
 	// name, folder, skeleton name
-	BABYLON.SceneLoader.ImportMesh( "him", "models/Dude/", "Dude.babylon", scene, ( newMeshes, particleSystems, skeletons ) =>
+	BABYLON.SceneLoader.ImportMesh( "him", "models/Dude/", "Dude.babylon", scene, ( newMeshes, _particleSystems, skeletons ) =>
 	{
-		let heroDude = newMeshes[ 0 ];
+		const heroDude = newMeshes[ 0 ];
 		heroDude.position = new BABYLON.Vector3( 0, 0, 50 );  // The original dude
 
 		// give it a name so that we can query the scene to get it by name
@@ -412,12 +412,11 @@ function createHeroDude( scene )
 	} );
 }
 
-
 function doClone( originalMesh, skeletons, id )
 {
+	const xrand = Math.floor( Math.random() * 500 - 250 );
+	const zrand = Math.floor( Math.random() * 500 - 250 );
 	let myClone;
-	let xrand = Math.floor( Math.random() * 500 - 250 );
-	let zrand = Math.floor( Math.random() * 500 - 250 );
 
 	myClone = originalMesh.clone( "clone_" + id );
 	myClone.position = new BABYLON.Vector3( xrand, 0, zrand );
@@ -435,10 +434,10 @@ function doClone( originalMesh, skeletons, id )
 		if ( skeletons.length === 1 )
 		{
 			// the skeleton controls/animates all children, like in the Dude model
-			let clonedSkeleton = skeletons[ 0 ].clone( "clone_" + id + "_skeleton" );
+			const clonedSkeleton = skeletons[ 0 ].clone( "clone_" + id + "_skeleton" );
 			myClone.skeleton = clonedSkeleton;
 
-			let nbChildren = myClone.getChildren().length;
+			const nbChildren = myClone.getChildren().length;
 
 			for ( let i = 0; i < nbChildren; i++ )
 			{
@@ -465,7 +464,7 @@ function moveOtherDudes()
 {
 	if ( scene.dudes )
 	{
-		for ( var i = 0; i < scene.dudes.length; i++ )
+		for ( let i = 0; i < scene.dudes.length; i++ )
 		{
 			scene.dudes[ i ].Dude.move( scene );
 		}
@@ -473,7 +472,7 @@ function moveOtherDudes()
 
 	if ( scene.guys )
 	{
-		for ( var i = 0; i < scene.guys.length; i++ )
+		for ( let i = 0; i < scene.guys.length; i++ )
 		{
 			scene.guys[ i ].Guy.move( scene );
 		}
@@ -499,12 +498,14 @@ function modifySettings()
 
 	document.addEventListener( "pointerlockchange", () =>
 	{
-		let element = document.pointerLockElement || null;
+		const element = document.pointerLockElement || null;
+
 		if ( element )
 		{
 			// lets create a custom attribute
 			scene.alreadyLocked = true;
-		} else
+		}
+		else
 		{
 			scene.alreadyLocked = false;
 		}
