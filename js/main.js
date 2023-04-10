@@ -36,15 +36,14 @@ function createScene() {
 }
 
 function createFreeCamera(scene) {
-    let camera = new BABYLON.FreeCamera("freeCamera", new BABYLON.Vector3(0, 50, 0), scene);
+    let camera = new BABYLON.FreeCamera("freeCamera", new BABYLON.Vector3(0, 5, -10), scene);
     camera.attachControl(canvas);
-    // prevent camera to cross ground
     camera.checkCollisions = true; 
-    // avoid flying with the camera
     camera.applyGravity = true;
 
-    // Add extra keys for camera movements
-    // Need the ascii code of the extra key(s). We use a string method here to get the ascii code
+    camera.setTarget(BABYLON.Vector3.Zero());
+    camera.rotation = new BABYLON.Vector3(Math.PI / 6, Math.PI / 4, 0); // (30 deg, 45 deg, 0 deg)
+
     camera.keysUp.push('z'.charCodeAt(0));
     camera.keysDown.push('s'.charCodeAt(0));
     camera.keysLeft.push('q'.charCodeAt(0));
@@ -56,6 +55,7 @@ function createFreeCamera(scene) {
 
     return camera;
 }
+
 
 window.addEventListener("resize", () => {
     engine.resize()
