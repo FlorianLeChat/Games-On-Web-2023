@@ -1,6 +1,8 @@
 let canvas;
 let engine;
 let scene;
+// vars for handling inputs
+let inputStates = {};
 
 window.onload = startGame;
 
@@ -13,37 +15,64 @@ function startGame() {
     // out of the game window)
     modifySettings();
 
+    let Perso = scene.getMeshByName("Perso");
+
     engine.runRenderLoop(() => {
+        let deltaTime = engine.getDeltaTime(); // remind you something ?
+
+        Perso.move();
         scene.render();
     });
 }
 
 function createScene() {
     let scene = new BABYLON.Scene(engine);
-    let camera = createFreeCamera(scene);
+    let ground = createGround(scene);
+    let freeCamera = createFreeCamera(scene);
 
-    // load the .glb model and add it to the scene
-    BABYLON.SceneLoader.ImportMesh("", "models/", "american_road.glb", scene, function(newMeshes) {
-        newMeshes.forEach(function(mesh) {
-            scene.addMesh(mesh);
-        });
-     });
-    // add some lights to the scene
-    let light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 1, 0), scene);
-    let light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 1, -1), scene);
+    let Perso = createPerso(scene);
 
-    return scene;
+    // second parameter is the target to follow
+    let followCamera = createFollowCamera(scene, Perso);
+    scene.activeCamera = followCamera;
+
+    createLights(scene);
+ 
+   return scene;
+}
+
+function createGround(scene) {
+    const groundOptions = { width:70, height:20000, subdivisions:20, minHeight:0, maxHeight:0, onReady: onGroundCreated};
+    //scene is optional and defaults to the current scene
+    const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap("gdhm", 'images/hmap1.png', groundOptions, scene); 
+
+    function onGroundCreated() {
+        const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
+        groundMaterial.diffuseTexture = new BABYLON.Texture("images/road.png");
+        ground.material = groundMaterial;
+        // to be taken into account by collision detection
+        ground.checkCollisions = true;
+        //groundMaterial.wireframe=true;
+    }
+    return ground;
+}
+
+function createLights(scene) {
+    // i.e sun light with all light rays parallels, the vector is the direction.
+    let light0 = new BABYLON.DirectionalLight("dir0", new BABYLON.Vector3(-1, -1, 0), scene);
+
 }
 
 function createFreeCamera(scene) {
-    let camera = new BABYLON.FreeCamera("freeCamera", new BABYLON.Vector3(0, 5, -10), scene);
+    let camera = new BABYLON.FreeCamera("freeCamera", new BABYLON.Vector3(0, 50, 0), scene);
     camera.attachControl(canvas);
+    // prevent camera to cross ground
     camera.checkCollisions = true; 
+    // avoid flying with the camera
     camera.applyGravity = true;
 
-    camera.setTarget(BABYLON.Vector3.Zero());
-    camera.rotation = new BABYLON.Vector3(Math.PI / 6, Math.PI / 4, 0); // (30 deg, 45 deg, 0 deg)
-
+    // Add extra keys for camera movements
+    // Need the ascii code of the extra key(s). We use a string method here to get the ascii code
     camera.keysUp.push('z'.charCodeAt(0));
     camera.keysDown.push('s'.charCodeAt(0));
     camera.keysLeft.push('q'.charCodeAt(0));
@@ -56,6 +85,70 @@ function createFreeCamera(scene) {
     return camera;
 }
 
+function createFollowCamera(scene, target) {
+    let camera = new BABYLON.FollowCamera("PersoFollowCamera", target.position, scene, target);
+
+    camera.radius = 15; // how far from the object to follow
+	camera.heightOffset = 2; // how high above the object to place the camera
+	camera.rotationOffset = 180; // the viewing angle
+	camera.cameraAcceleration = .1; // how fast to move
+	camera.maxCameraSpeed = 5; // speed limit
+
+    return camera;
+}
+
+let zMovement = 5;
+function createPerso(scene) {
+    let Perso = new BABYLON.MeshBuilder.CreateBox("Perso", {height:1, depth:6, width:6}, scene);
+    let PersoMaterial = new BABYLON.StandardMaterial("PersoMaterial", scene);
+    PersoMaterial.diffuseColor = new BABYLON.Color3.Red;
+    PersoMaterial.emissiveColor = new BABYLON.Color3.Blue;
+    Perso.material = PersoMaterial;
+
+    // By default the box/Perso is in 0, 0, 0, let's change that...
+    Perso.position.y = 0.6;
+    Perso.speed = 1;
+    Perso.frontVector = new BABYLON.Vector3(0, 0, 1);
+
+    Perso.move = () => {
+                //Perso.position.z += -1; // speed should be in unit/s, and depends on
+                                 // deltaTime !
+
+        // if we want to move while taking into account collision detections
+        // collision uses by default "ellipsoids"
+
+        let yMovement = 0;
+       
+        if (Perso.position.y > 2) {
+            zMovement = 0;
+            yMovement = -2;
+        } 
+        //Perso.moveWithCollisions(new BABYLON.Vector3(0, yMovement, zMovement));
+
+        
+        if(inputStates.up) {
+            //Perso.moveWithCollisions(new BABYLON.Vector3(0, 0, 1*Perso.speed));
+            Perso.moveWithCollisions(Perso.frontVector.multiplyByFloats(Perso.speed, Perso.speed, Perso.speed));
+        }    
+        if(inputStates.down) {
+            //Perso.moveWithCollisions(new BABYLON.Vector3(0, 0, -1*Perso.speed));
+            Perso.moveWithCollisions(Perso.frontVector.multiplyByFloats(-Perso.speed, -Perso.speed, -Perso.speed));
+
+        }  
+        if(inputStates.left) {
+            //Perso.moveWithCollisions(new BABYLON.Vector3(-1*Perso.speed, 0, 0));
+            Perso.rotation.y -= 0.02;
+            Perso.frontVector = new BABYLON.Vector3(Math.sin(Perso.rotation.y), 0, Math.cos(Perso.rotation.y));
+        }    
+        if(inputStates.right) {
+            //Perso.moveWithCollisions(new BABYLON.Vector3(1*Perso.speed, 0, 0));
+            Perso.rotation.y += 0.02;
+            Perso.frontVector = new BABYLON.Vector3(Math.sin(Perso.rotation.y), 0, Math.cos(Perso.rotation.y));
+        }
+    }
+
+    return Perso;
+}
 
 window.addEventListener("resize", () => {
     engine.resize()
@@ -64,12 +157,8 @@ window.addEventListener("resize", () => {
 function modifySettings() {
     // as soon as we click on the game window, the mouse pointer is "locked"
     // you will have to press ESC to unlock it
-
-    //ajoute un événement "onPointerDown" à la scène du jeu lorsque l'utilisateur clique sur la fenêtre du jeu.
     scene.onPointerDown = () => {
-        //On vérifie si le pointeur de la souris est déjà verrouillé ou non. 
-        //Si ce n'est pas le cas, elle demande que le pointeur soit verrouillé en utilisant la méthode "requestPointerLock()" de l'élément canvas
-        if(!scene.alreadyLocked) { 
+        if(!scene.alreadyLocked) {
             console.log("requesting pointer lock");
             canvas.requestPointerLock();
         } else {
@@ -86,4 +175,42 @@ function modifySettings() {
             scene.alreadyLocked = false;
         }
     })
+
+    // key listeners for the Perso
+    inputStates.left = false;
+    inputStates.right = false;
+    inputStates.up = false;
+    inputStates.down = false;
+    inputStates.space = false;
+    
+    //add the listener to the main, window object, and update the states
+    window.addEventListener('keydown', (event) => {
+        if ((event.key === "ArrowLeft") || (event.key === "q")|| (event.key === "Q")) {
+           inputStates.left = true;
+        } else if ((event.key === "ArrowUp") || (event.key === "z")|| (event.key === "Z")){
+           inputStates.up = true;
+        } else if ((event.key === "ArrowRight") || (event.key === "d")|| (event.key === "D")){
+           inputStates.right = true;
+        } else if ((event.key === "ArrowDown")|| (event.key === "s")|| (event.key === "S")) {
+           inputStates.down = true;
+        }  else if (event.key === " ") {
+           inputStates.space = true;
+        }
+    }, false);
+
+    //if the key will be released, change the states object 
+    window.addEventListener('keyup', (event) => {
+        if ((event.key === "ArrowLeft") || (event.key === "q")|| (event.key === "Q")) {
+           inputStates.left = false;
+        } else if ((event.key === "ArrowUp") || (event.key === "z")|| (event.key === "Z")){
+           inputStates.up = false;
+        } else if ((event.key === "ArrowRight") || (event.key === "d")|| (event.key === "D")){
+           inputStates.right = false;
+        } else if ((event.key === "ArrowDown")|| (event.key === "s")|| (event.key === "S")) {
+           inputStates.down = false;
+        }  else if (event.key === " ") {
+           inputStates.space = false;
+        }
+    }, false);
 }
+
