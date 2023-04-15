@@ -15,12 +15,12 @@ function startGame() {
     // out of the game window)
     modifySettings();
 
-    let Perso = scene.getMeshByName("Perso");
+    let Car = scene.getMeshByName("Car");
 
     engine.runRenderLoop(() => {
         let deltaTime = engine.getDeltaTime(); // remind you something ?
 
-        Perso.move();
+        Car.move();
         scene.render();
     });
 }
@@ -30,14 +30,13 @@ function createScene() {
     let ground = createGround(scene);
     let freeCamera = createFreeCamera(scene);
 
-    let Perso = createPerso(scene);
+    let Car = createCar(scene);
 
     // second parameter is the target to follow
-    let followCamera = createFollowCamera(scene, Perso);
+    let followCamera = createFollowCamera(scene, Car);
     scene.activeCamera = followCamera;
 
     createLights(scene);
- 
    return scene;
 }
 
@@ -86,7 +85,7 @@ function createFreeCamera(scene) {
 }
 
 function createFollowCamera(scene, target) {
-    let camera = new BABYLON.FollowCamera("PersoFollowCamera", target.position, scene, target);
+    let camera = new BABYLON.FollowCamera("CarFollowCamera", target.position, scene, target);
 
     camera.radius = 15; // how far from the object to follow
 	camera.heightOffset = 2; // how high above the object to place the camera
@@ -98,20 +97,20 @@ function createFollowCamera(scene, target) {
 }
 
 let zMovement = 5;
-function createPerso(scene) {
-    let Perso = new BABYLON.MeshBuilder.CreateBox("Perso", {height:1, depth:6, width:6}, scene);
-    let PersoMaterial = new BABYLON.StandardMaterial("PersoMaterial", scene);
-    PersoMaterial.diffuseColor = new BABYLON.Color3.Red;
-    PersoMaterial.emissiveColor = new BABYLON.Color3.Blue;
-    Perso.material = PersoMaterial;
+function createCar(scene) {
+    let Car = BABYLON.SceneLoader.ImportMesh("", "/models/", "car.glb", scene, function(){
+    // let CarMaterial = new BABYLON.StandardMaterial("CarMaterial", scene);
+    // CarMaterial.diffuseColor = new BABYLON.Color3.Red;
+    // CarMaterial.emissiveColor = new BABYLON.Color3.Blue;
+    // Car.material = CarMaterial;
 
-    // By default the box/Perso is in 0, 0, 0, let's change that...
-    Perso.position.y = 0.6;
-    Perso.speed = 1;
-    Perso.frontVector = new BABYLON.Vector3(0, 0, 1);
+    // By default the box/Car is in 0, 0, 0, let's change that...
+    Car.position.y = 0.6;
+    Car.speed = 1;
+    Car.frontVector = new BABYLON.Vector3(0, 0, 1);
 
-    Perso.move = () => {
-                //Perso.position.z += -1; // speed should be in unit/s, and depends on
+    Car.move = () => {
+                //Car.position.z += -1; // speed should be in unit/s, and depends on
                                  // deltaTime !
 
         // if we want to move while taking into account collision detections
@@ -119,36 +118,36 @@ function createPerso(scene) {
 
         let yMovement = 0;
        
-        if (Perso.position.y > 2) {
+        if (Car.position.y > 2) {
             zMovement = 0;
             yMovement = -2;
         } 
-        //Perso.moveWithCollisions(new BABYLON.Vector3(0, yMovement, zMovement));
+        //Car.moveWithCollisions(new BABYLON.Vector3(0, yMovement, zMovement));
 
         
         if(inputStates.up) {
-            //Perso.moveWithCollisions(new BABYLON.Vector3(0, 0, 1*Perso.speed));
-            Perso.moveWithCollisions(Perso.frontVector.multiplyByFloats(Perso.speed, Perso.speed, Perso.speed));
+            //Car.moveWithCollisions(new BABYLON.Vector3(0, 0, 1*Car.speed));
+            Car.moveWithCollisions(Car.frontVector.multiplyByFloats(Car.speed, Car.speed, Car.speed));
         }    
         if(inputStates.down) {
-            //Perso.moveWithCollisions(new BABYLON.Vector3(0, 0, -1*Perso.speed));
-            Perso.moveWithCollisions(Perso.frontVector.multiplyByFloats(-Perso.speed, -Perso.speed, -Perso.speed));
+            //Car.moveWithCollisions(new BABYLON.Vector3(0, 0, -1*Car.speed));
+            Car.moveWithCollisions(Car.frontVector.multiplyByFloats(-Car.speed, -Car.speed, -Car.speed));
 
         }  
         if(inputStates.left) {
-            //Perso.moveWithCollisions(new BABYLON.Vector3(-1*Perso.speed, 0, 0));
-            Perso.rotation.y -= 0.02;
-            Perso.frontVector = new BABYLON.Vector3(Math.sin(Perso.rotation.y), 0, Math.cos(Perso.rotation.y));
+            //Car.moveWithCollisions(new BABYLON.Vector3(-1*Car.speed, 0, 0));
+            Car.rotation.y -= 0.02;
+            Car.frontVector = new BABYLON.Vector3(Math.sin(Car.rotation.y), 0, Math.cos(Car.rotation.y));
         }    
         if(inputStates.right) {
-            //Perso.moveWithCollisions(new BABYLON.Vector3(1*Perso.speed, 0, 0));
-            Perso.rotation.y += 0.02;
-            Perso.frontVector = new BABYLON.Vector3(Math.sin(Perso.rotation.y), 0, Math.cos(Perso.rotation.y));
+            //Car.moveWithCollisions(new BABYLON.Vector3(1*Car.speed, 0, 0));
+            Car.rotation.y += 0.02;
+            Car.frontVector = new BABYLON.Vector3(Math.sin(Car.rotation.y), 0, Math.cos(Car.rotation.y));
         }
     }
-
-    return Perso;
-}
+    
+    return Car;
+})};
 
 window.addEventListener("resize", () => {
     engine.resize()
@@ -176,7 +175,7 @@ function modifySettings() {
         }
     })
 
-    // key listeners for the Perso
+    // key listeners for the Car
     inputStates.left = false;
     inputStates.right = false;
     inputStates.up = false;
