@@ -16,12 +16,14 @@ function startGame() {
     modifySettings();
 
     let Car = scene.getMeshByName("Car");
+    
 
     engine.runRenderLoop(() => {
         let deltaTime = engine.getDeltaTime(); // remind you something ?
-
+        
         Car.move();
         scene.render();
+        
     });
 }
 
@@ -29,14 +31,17 @@ function createScene() {
     let scene = new BABYLON.Scene(engine);
     let ground = createGround(scene);
     let freeCamera = createFreeCamera(scene);
-
+    
     let Car = createCar(scene);
+   
 
     // second parameter is the target to follow
     let followCamera = createFollowCamera(scene, Car);
     scene.activeCamera = followCamera;
+    
 
     createLights(scene);
+    
    return scene;
 }
 
@@ -54,6 +59,7 @@ function createGround(scene) {
         //groundMaterial.wireframe=true;
     }
     return ground;
+    
 }
 
 function createLights(scene) {
@@ -84,8 +90,8 @@ function createFreeCamera(scene) {
     return camera;
 }
 
-function createFollowCamera(scene, target) {
-    let camera = new BABYLON.FollowCamera("CarFollowCamera", target.position, scene, target);
+function createFollowCamera(scenet) {
+    let camera = new BABYLON.FollowCamera("CarFollowCamera", scene);
 
     camera.radius = 15; // how far from the object to follow
 	camera.heightOffset = 2; // how high above the object to place the camera
@@ -98,60 +104,41 @@ function createFollowCamera(scene, target) {
 
 let zMovement = 5;
 function createCar(scene) {
-    let Car = BABYLON.SceneLoader.ImportMesh("", "/models/", "car.glb", scene, function(){
-    // let CarMaterial = new BABYLON.StandardMaterial("CarMaterial", scene);
-    // CarMaterial.diffuseColor = new BABYLON.Color3.Red;
-    // CarMaterial.emissiveColor = new BABYLON.Color3.Blue;
-    // Car.material = CarMaterial;
+  BABYLON.SceneLoader.ImportMesh("", "./models/", "Car.glb", scene, function (newMeshes) {
+      let Car = newMeshes[0];
+      Car.name = "Car";
+      Car.position.y = 0.6;
+      Car.speed = 1;
+      Car.frontVector = new BABYLON.Vector3(0, 0, 1);
+      
+      Car.move = () => {
+          let yMovement = 0;
+          
+          if (Car.position.y > 2) {
+              zMovement = 0;
+              yMovement = -2;
+          } 
+          
+          if(inputStates.up) {
+              Car.moveWithCollisions(Car.frontVector.multiplyByFloats(Car.speed, Car.speed, Car.speed));
+          }    
+          if(inputStates.down) {
+              Car.moveWithCollisions(Car.frontVector.multiplyByFloats(-Car.speed, -Car.speed, -Car.speed));
+          } 
 
-    // By default the box/Car is in 0, 0, 0, let's change that...
-    Car.position.y = 0.6;
-    Car.speed = 1;
-    Car.frontVector = new BABYLON.Vector3(0, 0, 1);
+          // other movements (left, right, etc.) can be added here
+          
+      };
 
-    Car.move = () => {
-                //Car.position.z += -1; // speed should be in unit/s, and depends on
-                                 // deltaTime !
+      Car.scaling = new BABYLON.Vector3(0.1, 0.1, 0.1);
+      Car.rotation.y = Math.PI;
+      Car.name = "Car";
 
-        // if we want to move while taking into account collision detections
-        // collision uses by default "ellipsoids"
+      // to be taken into account by collision detection
+      Car.checkCollisions = true;
+  });
+}
 
-        let yMovement = 0;
-       
-        if (Car.position.y > 2) {
-            zMovement = 0;
-            yMovement = -2;
-        } 
-        //Car.moveWithCollisions(new BABYLON.Vector3(0, yMovement, zMovement));
-
-        
-        if(inputStates.up) {
-            //Car.moveWithCollisions(new BABYLON.Vector3(0, 0, 1*Car.speed));
-            Car.moveWithCollisions(Car.frontVector.multiplyByFloats(Car.speed, Car.speed, Car.speed));
-        }    
-        if(inputStates.down) {
-            //Car.moveWithCollisions(new BABYLON.Vector3(0, 0, -1*Car.speed));
-            Car.moveWithCollisions(Car.frontVector.multiplyByFloats(-Car.speed, -Car.speed, -Car.speed));
-
-        }  
-        if(inputStates.left) {
-            //Car.moveWithCollisions(new BABYLON.Vector3(-1*Car.speed, 0, 0));
-            Car.rotation.y -= 0.02;
-            Car.frontVector = new BABYLON.Vector3(Math.sin(Car.rotation.y), 0, Math.cos(Car.rotation.y));
-        }    
-        if(inputStates.right) {
-            //Car.moveWithCollisions(new BABYLON.Vector3(1*Car.speed, 0, 0));
-            Car.rotation.y += 0.02;
-            Car.frontVector = new BABYLON.Vector3(Math.sin(Car.rotation.y), 0, Math.cos(Car.rotation.y));
-        }
-    }
-    
-    return Car;
-})};
-
-window.addEventListener("resize", () => {
-    engine.resize()
-});
 
 function modifySettings() {
     // as soon as we click on the game window, the mouse pointer is "locked"
