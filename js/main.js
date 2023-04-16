@@ -6,139 +6,164 @@ let inputStates = {};
 
 window.onload = startGame;
 
-function startGame() {
-    canvas = document.querySelector("#myCanvas");
-    engine = new BABYLON.Engine(canvas, true);
-    scene = createScene();
+async function startGame()
+{
+	canvas = document.querySelector( "#myCanvas" );
+	engine = new BABYLON.Engine( canvas, true );
+	scene = await createScene();
 
-    // modify some default settings (i.e pointer events to prevent cursor to go 
-    // out of the game window)
-    modifySettings();
+	// modify some default settings (i.e pointer events to prevent cursor to go
+	// out of the game window)
+	modifySettings();
 
-    let Car = scene.getMeshByName("Car");
-    
+	let Car = scene.getMeshByName( "Car" );
 
-    engine.runRenderLoop(() => {
-        let deltaTime = engine.getDeltaTime(); // remind you something ?
-        
-        Car.move();
-        scene.render();
-        
-    });
+	engine.runRenderLoop( () =>
+	{
+		let deltaTime = engine.getDeltaTime(); // remind you something ?
+
+		Car.move();
+		scene.render();
+	} );
 }
 
-function createScene() {
-    let scene = new BABYLON.Scene(engine);
-    let ground = createGround(scene);
-    let freeCamera = createFreeCamera(scene);
-    
-    let Car = createCar(scene);
-   
+async function createScene()
+{
+	let scene = new BABYLON.Scene( engine );
+	let ground = createGround( scene );
 
-    // second parameter is the target to follow
-    let followCamera = createFollowCamera(scene, Car);
-    scene.activeCamera = followCamera;
-    
+	let Car = await createCar( scene );
+	let freeCamera = createFreeCamera( scene, Car );
 
-    createLights(scene);
-    
-   return scene;
+	// second parameter is the target to follow
+	let followCamera = createFollowCamera( scene, Car );
+	scene.activeCamera = followCamera;
+
+	createLights( scene );
+
+	return scene;
 }
 
-function createGround(scene) {
-    const groundOptions = { width:70, height:20000, subdivisions:20, minHeight:0, maxHeight:0, onReady: onGroundCreated};
-    //scene is optional and defaults to the current scene
-    const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap("gdhm", 'images/hmap1.png', groundOptions, scene); 
+function createGround( scene )
+{
+	const groundOptions = { width: 70, height: 20000, subdivisions: 20, minHeight: 0, maxHeight: 0, onReady: onGroundCreated };
+	//scene is optional and defaults to the current scene
+	const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap( "gdhm", 'images/hmap1.png', groundOptions, scene );
 
-    function onGroundCreated() {
-        const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
-        groundMaterial.diffuseTexture = new BABYLON.Texture("images/road.png");
-        ground.material = groundMaterial;
-        // to be taken into account by collision detection
-        ground.checkCollisions = true;
-        //groundMaterial.wireframe=true;
-    }
-    return ground;
-    
-}
-
-function createLights(scene) {
-    // i.e sun light with all light rays parallels, the vector is the direction.
-    let light0 = new BABYLON.DirectionalLight("dir0", new BABYLON.Vector3(-1, -1, 0), scene);
+	function onGroundCreated()
+	{
+		const groundMaterial = new BABYLON.StandardMaterial( "groundMaterial", scene );
+		groundMaterial.diffuseTexture = new BABYLON.Texture( "images/road.png" );
+		ground.material = groundMaterial;
+		// to be taken into account by collision detection
+		ground.checkCollisions = true;
+		//groundMaterial.wireframe=true;
+	}
+	return ground;
 
 }
 
-function createFreeCamera(scene) {
-    let camera = new BABYLON.FreeCamera("freeCamera", new BABYLON.Vector3(0, 50, 0), scene);
-    camera.attachControl(canvas);
-    // prevent camera to cross ground
-    camera.checkCollisions = true; 
-    // avoid flying with the camera
-    camera.applyGravity = true;
+function createLights( scene )
+{
+	// i.e sun light with all light rays parallels, the vector is the direction.
+	let light0 = new BABYLON.DirectionalLight( "dir0", new BABYLON.Vector3( -1, -1, 0 ), scene );
 
-    // Add extra keys for camera movements
-    // Need the ascii code of the extra key(s). We use a string method here to get the ascii code
-    camera.keysUp.push('z'.charCodeAt(0));
-    camera.keysDown.push('s'.charCodeAt(0));
-    camera.keysLeft.push('q'.charCodeAt(0));
-    camera.keysRight.push('d'.charCodeAt(0));
-    camera.keysUp.push('Z'.charCodeAt(0));
-    camera.keysDown.push('S'.charCodeAt(0));
-    camera.keysLeft.push('Q'.charCodeAt(0));
-    camera.keysRight.push('D'.charCodeAt(0));
-
-    return camera;
 }
 
-function createFollowCamera(scenet) {
-    let camera = new BABYLON.FollowCamera("CarFollowCamera", scene);
+function createFreeCamera( scene )
+{
+	let camera = new BABYLON.FreeCamera( "freeCamera", new BABYLON.Vector3( 0, 50, 0 ), scene );
+	camera.attachControl( canvas );
+	// prevent camera to cross ground
+	camera.checkCollisions = true;
+	// avoid flying with the camera
+	camera.applyGravity = true;
 
-    camera.radius = 15; // how far from the object to follow
+	// Add extra keys for camera movements
+	// Need the ascii code of the extra key(s). We use a string method here to get the ascii code
+	camera.keysUp.push( 'z'.charCodeAt( 0 ) );
+	camera.keysDown.push( 's'.charCodeAt( 0 ) );
+	camera.keysLeft.push( 'q'.charCodeAt( 0 ) );
+	camera.keysRight.push( 'd'.charCodeAt( 0 ) );
+	camera.keysUp.push( 'Z'.charCodeAt( 0 ) );
+	camera.keysDown.push( 'S'.charCodeAt( 0 ) );
+	camera.keysLeft.push( 'Q'.charCodeAt( 0 ) );
+	camera.keysRight.push( 'D'.charCodeAt( 0 ) );
+
+	return camera;
+}
+
+function createFollowCamera( scene, target )
+{
+	let camera = new BABYLON.FollowCamera( "CarFollowCamera", target.position, scene, target );
+
+	camera.radius = 10; // how far from the object to follow
 	camera.heightOffset = 2; // how high above the object to place the camera
 	camera.rotationOffset = 180; // the viewing angle
 	camera.cameraAcceleration = .1; // how fast to move
 	camera.maxCameraSpeed = 5; // speed limit
 
-    return camera;
+	return camera;
 }
 
 let zMovement = 5;
-function createCar(scene) {
-  BABYLON.SceneLoader.ImportMesh("", "./models/", "Car.glb", scene, function (newMeshes) {
-      let Car = newMeshes[0];
-      Car.name = "Car";
-      Car.position.y = 0.6;
-      Car.speed = 1;
-      Car.frontVector = new BABYLON.Vector3(0, 0, 1);
-      
-      Car.move = () => {
-          let yMovement = 0;
-          
-          if (Car.position.y > 2) {
-              zMovement = 0;
-              yMovement = -2;
-          } 
-          
-          if(inputStates.up) {
-              Car.moveWithCollisions(Car.frontVector.multiplyByFloats(Car.speed, Car.speed, Car.speed));
-          }    
-          if(inputStates.down) {
-              Car.moveWithCollisions(Car.frontVector.multiplyByFloats(-Car.speed, -Car.speed, -Car.speed));
-          } 
+async function createCar( scene )
+{
+	return new Promise( resolve =>
+	{
+		BABYLON.SceneLoader.ImportMesh( "", "./models/", "Car.glb", scene, function ( newMeshes )
+		{
+			let Car = newMeshes[ 0 ];
+			Car.name = "Car";
+			Car.position.y = 0.6;
+			Car.speed = 1;
+			Car.frontVector = new BABYLON.Vector3( 0, 0, 1 );
 
-          // other movements (left, right, etc.) can be added here
-          
-      };
+			Car.move = () =>
+			{
+				let yMovement = 0;
 
-      Car.scaling = new BABYLON.Vector3(0.1, 0.1, 0.1);
-      Car.rotation.y = Math.PI;
-      Car.name = "Car";
+				if ( Car.position.y > 2 )
+				{
+					zMovement = 0;
+					yMovement = -2;
+				}
 
-      // to be taken into account by collision detection
-      Car.checkCollisions = true;
-  });
+				if ( inputStates.up )
+				{
+					Car.moveWithCollisions( Car.frontVector.multiplyByFloats( Car.speed, Car.speed, Car.speed ) );
+				}
+				if ( inputStates.down )
+				{
+					Car.moveWithCollisions( Car.frontVector.multiplyByFloats( -Car.speed, -Car.speed, -Car.speed ) );
+				}
+
+				if(inputStates.left) {
+					//Car.moveWithCollisions(new BABYLON.Vector3(-1*Car.speed, 0, 0));
+					Car.rotation.y -= 0.02;
+					Car.frontVector = new BABYLON.Vector3(Math.sin(Car.rotation.y), 0, Math.cos(Car.rotation.y));
+				}    
+				if(inputStates.right) {
+					//Car.moveWithCollisions(new BABYLON.Vector3(1*Car.speed, 0, 0));
+					Car.rotation.y += 0.02;
+					Car.frontVector = new BABYLON.Vector3(Math.sin(Car.rotation.y), 0, Math.cos(Car.rotation.y));
+				}
+
+				// other movements (left, right, etc.) can be added here
+
+			};
+
+			Car.scaling = new BABYLON.Vector3( 0.3, 0.3, 0.5 );
+			Car.rotation.y = Math.PI;
+			Car.name = "Car";
+
+			// to be taken into account by collision detection
+			Car.checkCollisions = true;
+
+			resolve( Car );
+		} );
+	} );
 }
-
 
 function modifySettings() {
     // as soon as we click on the game window, the mouse pointer is "locked"
@@ -162,7 +187,7 @@ function modifySettings() {
         }
     })
 
-    // key listeners for the Car
+    // key listeners for the Perso
     inputStates.left = false;
     inputStates.right = false;
     inputStates.up = false;
@@ -199,4 +224,3 @@ function modifySettings() {
         }
     }, false);
 }
-
