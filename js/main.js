@@ -24,6 +24,13 @@ async function startGame()
 
 		Car.move();
 		scene.render();
+		
+		scene.meshes.forEach((mesh) => {
+			console.log(mesh.name);
+			  if (mesh.name == "ground" || mesh.name == "object") {
+				mesh.position.z += 2;
+			  }
+			});
 	} );
 }
 
@@ -44,24 +51,101 @@ async function createScene()
 	return scene;
 }
 
-function createGround( scene )
-{
-	const groundOptions = { width: 70, height: 20000, subdivisions: 20, minHeight: 0, maxHeight: 0, onReady: onGroundCreated };
-	//scene is optional and defaults to the current scene
-	const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap( "gdhm", 'images/hmap1.png', groundOptions, scene );
+function createGround(scene) {
+    const groundOptions = {
+        width: 100,
+        height: 500,
+        subdivisions: 20,
+        minHeight: 0,
+        maxHeight: 0,
+        onReady: onGroundCreated
+    };
+    const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap("gdhm", "images/hmap1.png", groundOptions, scene);
 
-	function onGroundCreated()
-	{
-		const groundMaterial = new BABYLON.StandardMaterial( "groundMaterial", scene );
-		groundMaterial.diffuseTexture = new BABYLON.Texture( "images/road.png" );
+    function onGroundCreated() {
+		const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
+		groundMaterial.diffuseTexture = new BABYLON.Texture("images/road.png");
 		ground.material = groundMaterial;
-		// to be taken into account by collision detection
 		ground.checkCollisions = true;
-		//groundMaterial.wireframe=true;
+	
+		// create objects at random positions on the ground
+		const numObjects = 10; // change this to adjust the number of objects
+		const objectWidth = 5; // the width of the objects
+		const objectHeight = 10; // the height of the objects
+		const objectSpacing = 20; // the minimum spacing between objects
+	
+		for (let i = 0; i < numObjects; i++) {
+			const x = Math.random() * (groundOptions.width - objectWidth) - groundOptions.width / 2 + objectWidth / 2;
+			const z = Math.random() * (groundOptions.height - objectSpacing) - groundOptions.height / 2 + objectSpacing / 2;
+			const object = BABYLON.MeshBuilder.CreateBox(`object`, { width: objectWidth, height: objectHeight, depth: objectWidth }, scene);
+			object.position = new BABYLON.Vector3(x, objectHeight / 2, z);
+			object.checkCollisions = true;
+		}
+	
+		animateGround();
 	}
-	return ground;
 
+    function animateGround() {
+        const animationSpeed = 0.1; // change this to adjust the speed of the ground
+        const groundLength = 500; // the length of the ground in the z-direction
+        const groundWidth = 100; // the width of the ground in the x-direction
+        const groundPosition = ground.position.clone();
+        const groundOffset = new BABYLON.Vector3(0, 0, -groundLength);
+        ground.position.addInPlace(groundOffset);
+
+        // create a new ground mesh and material
+        const newGround = BABYLON.MeshBuilder.CreateGround("ground", { width: groundWidth, height: groundLength }, scene);
+        const newGroundMaterial = new BABYLON.StandardMaterial("newGroundMaterial", scene);
+        newGroundMaterial.diffuseTexture = new BABYLON.Texture("images/road.png");
+        newGround.material = newGroundMaterial;
+
+        // position the new ground behind the old one
+        newGround.position = groundPosition.clone().subtract(groundOffset);
+
+        // animate the ground
+        const groundAnimation = new BABYLON.Animation("groundAnimation", "position", 60, BABYLON.Animation.ANIMATIONTYPE_VECTOR3, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+        const keys = [
+            { frame: 0, value: ground.position },
+            { frame: 100, value: ground.position.add(new BABYLON.Vector3(0, 0, groundLength)) }
+        ];
+        groundAnimation.setKeys(keys);
+        groundAnimation.setEasingFunction(new BABYLON.QuadraticEase());
+        ground.animations.push(groundAnimation);
+        scene.beginAnimation(ground, 0, 100, true, animationSpeed);
+
+        // destroy the old ground when it is out of view
+        setTimeout(function() {
+            ground.dispose();
+        },  10000);
+
+        // repeat the process to create a new ground
+        setTimeout(function() {
+            animateGround();
+        },  2000);
+    }
+
+    return ground;
 }
+
+
+// function createGround( scene )
+// {
+// 	const groundOptions = { width: 100, height: 500, subdivisions: 20, minHeight: 0, maxHeight: 0, onReady: onGroundCreated };
+// 	//scene is optional and defaults to the current scene
+// 	const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap( "gdhm", 'images/hmap1.png', groundOptions, scene );
+
+// 	function onGroundCreated()
+// 	{
+// 		const groundMaterial = new BABYLON.StandardMaterial( "groundMaterial", scene );
+// 		groundMaterial.diffuseTexture = new BABYLON.Texture( "images/road.png" );
+// 		ground.material = groundMaterial;
+// 		// to be taken into account by collision detection
+// 		ground.checkCollisions = true;
+// 		//groundMaterial.wireframe=true;
+// 	}
+// 	return ground;
+
+// }
 
 function createLights( scene )
 {
@@ -97,73 +181,78 @@ function createFollowCamera( scene, target )
 {
 	let camera = new BABYLON.FollowCamera( "CarFollowCamera", target.position, scene, target );
 
-	camera.radius = 10; // how far from the object to follow
-	camera.heightOffset = 2; // how high above the object to place the camera
+	camera.radius = 20; // how far from the object to follow
+	camera.heightOffset = 5; // how high above the object to place the camera
 	camera.rotationOffset = 180; // the viewing angle
-	camera.cameraAcceleration = .1; // how fast to move
+	camera.cameraAcceleration = 0.1; // how fast to move
 	camera.maxCameraSpeed = 5; // speed limit
 
 	return camera;
 }
 
 let zMovement = 5;
-async function createCar( scene )
-{
-	return new Promise( resolve =>
-	{
-		BABYLON.SceneLoader.ImportMesh( "", "./models/", "Car.glb", scene, function ( newMeshes )
-		{
-			let Car = newMeshes[ 0 ];
-			Car.name = "Car";
-			Car.position.y = 0.6;
-			Car.speed = 1;
-			Car.frontVector = new BABYLON.Vector3( 0, 0, 1 );
 
-			Car.move = () =>
-			{
-				let yMovement = 0;
+async function createCar(scene) {
+    return new Promise(resolve => {
+        BABYLON.SceneLoader.ImportMesh("", "./models/", "Car.glb", scene, function(newMeshes) {
+            let Car = newMeshes[0];
+            Car.name = "Car";
+            Car.position.y = 10;
+            Car.speed = 2;
+            Car.frontVector = new BABYLON.Vector3(0, 0, 1);
+            Car.laneIndex = 0; // start at the leftmost lane
 
-				if ( Car.position.y > 2 )
-				{
-					zMovement = 0;
-					yMovement = -2;
-				}
+            // Define the positions of the lanes
+            const lanes = [-30, 0, 30]; // example positions for 3 lanes
+            const laneOffset = 5; // distance between lanes
+            const leftmostLane = lanes[0];
+            const rightmostLane = lanes[lanes.length - 1];
 
-				if ( inputStates.up )
-				{
-					Car.moveWithCollisions( Car.frontVector.multiplyByFloats( Car.speed, Car.speed, Car.speed ) );
-				}
-				if ( inputStates.down )
-				{
-					Car.moveWithCollisions( Car.frontVector.multiplyByFloats( -Car.speed, -Car.speed, -Car.speed ) );
-				}
+            Car.move = () => {
+                let yMovement = 0;
 
-				if(inputStates.left) {
-					//Car.moveWithCollisions(new BABYLON.Vector3(-1*Car.speed, 0, 0));
-					Car.rotation.y -= 0.02;
-					Car.frontVector = new BABYLON.Vector3(Math.sin(Car.rotation.y), 0, Math.cos(Car.rotation.y));
-				}    
-				if(inputStates.right) {
-					//Car.moveWithCollisions(new BABYLON.Vector3(1*Car.speed, 0, 0));
-					Car.rotation.y += 0.02;
-					Car.frontVector = new BABYLON.Vector3(Math.sin(Car.rotation.y), 0, Math.cos(Car.rotation.y));
-				}
+                if (Car.position.y > 2) {
+                    zMovement = 0;
+                    yMovement = -2;
+                }
 
-				// other movements (left, right, etc.) can be added here
+                if (inputStates.right) {
+                    if (Car.laneIndex > 0) { // check if there's a lane to the right
+                        Car.laneIndex--;
+                        let toPosition = new BABYLON.Vector3(lanes[Car.laneIndex], Car.position.y, Car.position.z);
+                        BABYLON.Animation.CreateAndStartAnimation("moveLeft", Car, "position", 15, 15, Car.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                    }
+                }   
+                if (inputStates.left) {
+                    if (Car.laneIndex < lanes.length - 1) { // check if there's a lane to the left
+                        Car.laneIndex++;
+                        let toPosition = new BABYLON.Vector3(lanes[Car.laneIndex], Car.position.y, Car.position.z);
+                        BABYLON.Animation.CreateAndStartAnimation("moveRight", Car, "position", 15, 15, Car.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                    }
+                }
+                if (inputStates.down) {
+					if (Car.laneIndex == 0 || Car.laneIndex == lanes.length - 1) { // check if there's a lane to the middle
+						Car.laneIndex = 1;
+						let toPosition = new BABYLON.Vector3(lanes[Car.laneIndex], Car.position.y, Car.position.z);
+						BABYLON.Animation.CreateAndStartAnimation("moveMiddle", Car, "position", 15, 15, Car.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+					}
+				}				
 
-			};
+                // other movements (left, right, etc.) can be added here
+            };
 
-			Car.scaling = new BABYLON.Vector3( 0.3, 0.3, 0.5 );
-			Car.rotation.y = Math.PI;
-			Car.name = "Car";
+            Car.scaling = new BABYLON.Vector3(3, 3, 5);
+            Car.rotation.y = Math.PI;
+            Car.name = "Car";
 
-			// to be taken into account by collision detection
-			Car.checkCollisions = true;
+            // to be taken into account by collision detection
+            Car.checkCollisions = true;
 
-			resolve( Car );
-		} );
-	} );
+            resolve(Car);
+        });
+    });
 }
+
 
 function modifySettings() {
     // as soon as we click on the game window, the mouse pointer is "locked"
