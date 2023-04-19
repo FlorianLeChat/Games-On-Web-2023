@@ -20,35 +20,48 @@ async function startGame()
 
 	engine.runRenderLoop( () =>
 	{
-		let deltaTime = engine.getDeltaTime(); // remind you something ?
+		let deltaTime = engine.getDeltaTime(); 
 
 		Car.move();
 		scene.render();
 		
-		scene.meshes.forEach((mesh) => {
-			console.log(mesh.name);
-			  if (mesh.name == "ground" || mesh.name == "object") {
-				mesh.position.z += 2;
-			  }
-			});
+		let groundSpeed = 0.001;
+
+        scene.registerBeforeRender(function() {
+            scene.meshes.forEach((mesh) => {
+                if (mesh.name == "ground" || mesh.name == "obstacle") {
+                    mesh.position.z += groundSpeed;
+                }
+            });
+
+            // Increase the ground speed over time
+            groundSpeed += 0.0000001;
+        });
+
 	} );
 }
 
 async function createScene()
 {
-	let scene = new BABYLON.Scene( engine );
-	let ground = createGround( scene );
+  let scene = new BABYLON.Scene( engine );
+  let ground = createGround( scene );
 
-	let Car = await createCar( scene );
-	let freeCamera = createFreeCamera( scene, Car );
+  let Car = await createCar( scene );
+  let freeCamera = createFreeCamera( scene, Car );
 
-	// second parameter is the target to follow
-	let followCamera = createFollowCamera( scene, Car );
-	scene.activeCamera = followCamera;
+  // second parameter is the target to follow
+  let followCamera = createFollowCamera( scene, Car );
+  scene.activeCamera = followCamera;
 
-	createLights( scene );
+  createLights( scene );
 
-	return scene;
+  // Add obstacles
+  setInterval(function() {
+    let obstacle = createObstacle(scene);
+    obstacle.position.z = Car.position.z - 100; // place the obstacle just in front of the car
+  }, 6000);
+
+  return scene;
 }
 
 function createGround(scene) {
@@ -63,30 +76,16 @@ function createGround(scene) {
     const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap("gdhm", "images/hmap1.png", groundOptions, scene);
 
     function onGroundCreated() {
-		const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
-		groundMaterial.diffuseTexture = new BABYLON.Texture("images/road.png");
-		ground.material = groundMaterial;
-		ground.checkCollisions = true;
-	
-		// create objects at random positions on the ground
-		const numObjects = 10; // change this to adjust the number of objects
-		const objectWidth = 5; // the width of the objects
-		const objectHeight = 10; // the height of the objects
-		const objectSpacing = 20; // the minimum spacing between objects
-	
-		for (let i = 0; i < numObjects; i++) {
-			const x = Math.random() * (groundOptions.width - objectWidth) - groundOptions.width / 2 + objectWidth / 2;
-			const z = Math.random() * (groundOptions.height - objectSpacing) - groundOptions.height / 2 + objectSpacing / 2;
-			const object = BABYLON.MeshBuilder.CreateBox(`object`, { width: objectWidth, height: objectHeight, depth: objectWidth }, scene);
-			object.position = new BABYLON.Vector3(x, objectHeight / 2, z);
-			object.checkCollisions = true;
-		}
-	
-		animateGround();
-	}
+        const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
+        groundMaterial.diffuseTexture = new BABYLON.Texture("images/road.png");
+        ground.material = groundMaterial;
+        ground.checkCollisions = true;
+    
+        animateGround();
+    }
 
     function animateGround() {
-        const animationSpeed = 0.1; // change this to adjust the speed of the ground
+	
         const groundLength = 500; // the length of the ground in the z-direction
         const groundWidth = 100; // the width of the ground in the x-direction
         const groundPosition = ground.position.clone();
@@ -102,21 +101,10 @@ function createGround(scene) {
         // position the new ground behind the old one
         newGround.position = groundPosition.clone().subtract(groundOffset);
 
-        // animate the ground
-        const groundAnimation = new BABYLON.Animation("groundAnimation", "position", 60, BABYLON.Animation.ANIMATIONTYPE_VECTOR3, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
-        const keys = [
-            { frame: 0, value: ground.position },
-            { frame: 100, value: ground.position.add(new BABYLON.Vector3(0, 0, groundLength)) }
-        ];
-        groundAnimation.setKeys(keys);
-        groundAnimation.setEasingFunction(new BABYLON.QuadraticEase());
-        ground.animations.push(groundAnimation);
-        scene.beginAnimation(ground, 0, 100, true, animationSpeed);
-
         // destroy the old ground when it is out of view
         setTimeout(function() {
             ground.dispose();
-        },  10000);
+        },  5000);
 
         // repeat the process to create a new ground
         setTimeout(function() {
@@ -127,25 +115,23 @@ function createGround(scene) {
     return ground;
 }
 
-
-// function createGround( scene )
-// {
-// 	const groundOptions = { width: 100, height: 500, subdivisions: 20, minHeight: 0, maxHeight: 0, onReady: onGroundCreated };
-// 	//scene is optional and defaults to the current scene
-// 	const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap( "gdhm", 'images/hmap1.png', groundOptions, scene );
-
-// 	function onGroundCreated()
-// 	{
-// 		const groundMaterial = new BABYLON.StandardMaterial( "groundMaterial", scene );
-// 		groundMaterial.diffuseTexture = new BABYLON.Texture( "images/road.png" );
-// 		ground.material = groundMaterial;
-// 		// to be taken into account by collision detection
-// 		ground.checkCollisions = true;
-// 		//groundMaterial.wireframe=true;
-// 	}
-// 	return ground;
-
-// }
+function createObstacle(scene) {
+    let obstacle = BABYLON.Mesh.CreateBox("obstacle", 2, scene);
+    obstacle.scaling = new BABYLON.Vector3(6, 6, 6);
+  
+    let lane = Math.floor(Math.random() * 3); // randomly choose a lane (0, 1, or 2)
+  
+    let x = -40 + lane * 40; // compute the x position based on the lane
+    obstacle.position = new BABYLON.Vector3(x, 2, -100);
+  
+    obstacle.checkCollisions = true;
+  
+    let material = new BABYLON.StandardMaterial("obstacleMaterial", scene);
+    material.diffuseColor = new BABYLON.Color3(1, 0, 0);
+    obstacle.material = material;
+  
+    return obstacle;
+  }
 
 function createLights( scene )
 {
