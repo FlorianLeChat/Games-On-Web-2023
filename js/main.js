@@ -3,6 +3,7 @@ let engine;
 let scene;
 // vars for handling inputs
 let inputStates = {};
+let groundSpeed = 1;
 
 window.onload = startGame;
 
@@ -23,41 +24,27 @@ async function startGame() {
         Car.move();
     
         // Check for collisions with obstacles
-        checkCollisions();
-        
-        let groundSpeed = 0.001;
-    
-        scene.registerBeforeRender(function() {
-            scene.meshes.forEach((mesh) => {
-                if (mesh.name == "ground" || mesh.name == "obstacle") {
-                    mesh.position.z += groundSpeed;
-                }
+        // checkCollisions();
+            
+        scene.meshes.forEach((mesh) => {
+            if (mesh.name == "ground" || mesh.name == "obstacle") {
+                mesh.position.z += groundSpeed;                
+            }
             });
-    
+        
             // Increase the ground speed over time
-            groundSpeed += 0.00000000001;
-        });
+        groundSpeed += 0.001;
 
         scene.render();
     });
 }
 
-function checkCollisions() {
-    let Car = scene.getMeshByName("Car");
-    let obstacles = scene.meshes.filter(mesh => mesh.name == "obstacle");
-    for (let obstacle of obstacles) {
-        if (Car.intersectsMesh(obstacle, false)) {
-            engine.stopRenderLoop();
-            return;
-        }
-    }
-}
-
 async function createScene() {
     let scene = new BABYLON.Scene( engine );
     let ground = createGround( scene );
+    let itBOX = createitBOX(scene);
   
-    let Car = await createCar( scene );
+    let Car = await createCar( scene, itBOX );
     let freeCamera = createFreeCamera( scene, Car );
   
     // second parameter is the target to follow
@@ -69,7 +56,7 @@ async function createScene() {
     // Add obstacles
     function addObstacle() {
         // create first obstacle
-        let obstacle1 = createObstacle(scene);
+        let obstacle1 = createObstacle(scene, itBOX);
         obstacle1.position.z = Car.position.z - 300 - Math.floor(Math.random() * 100); // place the obstacle just in front of the car
         let lane1 = Math.floor(Math.random() * 3); // randomly choose a lane (0, 1, or 2)
         let x1 = -30 + lane1 * 30; // compute the x position based on the lane
@@ -84,7 +71,7 @@ async function createScene() {
         }, 10000);
     
         // create second obstacle
-        let obstacle2 = createObstacle(scene);
+        let obstacle2 = createObstacle(scene, itBOX);
         obstacle2.position.z = Car.position.z - 300 - Math.floor(Math.random() * 100); // place the obstacle just in front of the car
         let lane2 = Math.floor(Math.random() * 3); // randomly choose a lane (0, 1, or 2)
         let x2 = -30 + lane2 * 30; // compute the x position based on the lane
@@ -135,8 +122,31 @@ function createGround(scene) {
     return ground;
 }
 
-function createObstacle(scene) {
+function createitBOX(scene) {
+    let itBOX = BABYLON.Mesh.CreateBox("itBOX", 2, scene);
+    itBOX.scaling = new BABYLON.Vector3(6, 2, 12);
+    itBOX.visibility = false; // make the box invisible
+    itBOX.checkCollisions = true;
+    return itBOX;
+}
+
+function createObstacle(scene, itBOX) {
     let obstacle = BABYLON.Mesh.CreateBox("obstacle", 2, scene);
+    const actionManager = new BABYLON.ActionManager(scene);
+        actionManager.registerAction(
+            new BABYLON.ExecuteCodeAction(
+                {
+                    trigger: BABYLON.ActionManager.OnIntersectionEnterTrigger,
+                    parameter: { mesh: itBOX },
+                },
+                (evt) => {
+                   console.log("salut")
+                   engine.stopRenderLoop();
+
+                }
+            )
+        );
+    obstacle.actionManager = actionManager;
     obstacle.scaling = new BABYLON.Vector3(6, 6, 6);
   
     let lane = Math.floor(Math.random() * 3); // randomly choose a lane (0, 1, or 2)
@@ -211,7 +221,7 @@ function createFollowCamera( scene, target )
 
 let zMovement = 5;
 
-async function createCar(scene) {
+async function createCar(scene, itBOX) {
     return new Promise(resolve => {
         BABYLON.SceneLoader.ImportMesh("", "./models/", "Car.glb", scene, function(newMeshes) {
             let Car = newMeshes[0];
@@ -239,14 +249,16 @@ async function createCar(scene) {
                     if (Car.laneIndex > 0) { // check if there's a lane to the right
                         Car.laneIndex--;
                         let toPosition = new BABYLON.Vector3(lanes[Car.laneIndex], Car.position.y, Car.position.z);
-                        BABYLON.Animation.CreateAndStartAnimation("moveLeft", Car, "position", 15, 15, Car.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                        BABYLON.Animation.CreateAndStartAnimation("moveRight", Car, "position", 15, 15, Car.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                        BABYLON.Animation.CreateAndStartAnimation("moveRight", itBOX, "position", 15, 15, itBOX.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
                     }
                 }   
                 if (inputStates.left) {
                     if (Car.laneIndex < lanes.length - 1) { // check if there's a lane to the left
                         Car.laneIndex++;
                         let toPosition = new BABYLON.Vector3(lanes[Car.laneIndex], Car.position.y, Car.position.z);
-                        BABYLON.Animation.CreateAndStartAnimation("moveRight", Car, "position", 15, 15, Car.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                        BABYLON.Animation.CreateAndStartAnimation("moveLeft", Car, "position", 15, 15, Car.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                        BABYLON.Animation.CreateAndStartAnimation("moveLeft", itBOX, "position", 15, 15, itBOX.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
                     }
                 }
                 if (inputStates.down) {
@@ -254,6 +266,8 @@ async function createCar(scene) {
 						Car.laneIndex = 1;
 						let toPosition = new BABYLON.Vector3(lanes[Car.laneIndex], Car.position.y, Car.position.z);
 						BABYLON.Animation.CreateAndStartAnimation("moveMiddle", Car, "position", 15, 15, Car.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                        BABYLON.Animation.CreateAndStartAnimation("moveMiddle", itBOX, "position", 15, 15, itBOX.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+
 					}
 				}				
 
