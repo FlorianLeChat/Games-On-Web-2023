@@ -6,8 +6,7 @@ let inputStates = {};
 
 window.onload = startGame;
 
-async function startGame()
-{
+async function startGame() {
 	canvas = document.querySelector( "#myCanvas" );
 	engine = new BABYLON.Engine( canvas, true );
 	scene = await createScene();
@@ -18,100 +17,121 @@ async function startGame()
 
 	let Car = scene.getMeshByName( "Car" );
 
-	engine.runRenderLoop( () =>
-	{
-		let deltaTime = engine.getDeltaTime(); 
-
-		Car.move();
-		scene.render();
-		
-		let groundSpeed = 0.001;
-
+	engine.runRenderLoop(() => {
+        let deltaTime = engine.getDeltaTime(); 
+    
+        Car.move();
+    
+        // Check for collisions with obstacles
+        checkCollisions();
+        
+        let groundSpeed = 0.001;
+    
         scene.registerBeforeRender(function() {
             scene.meshes.forEach((mesh) => {
                 if (mesh.name == "ground" || mesh.name == "obstacle") {
                     mesh.position.z += groundSpeed;
                 }
             });
-
+    
             // Increase the ground speed over time
-            groundSpeed += 0.0000001;
+            groundSpeed += 0.00000000001;
         });
 
-	} );
+        scene.render();
+    });
 }
 
-async function createScene()
-{
-  let scene = new BABYLON.Scene( engine );
-  let ground = createGround( scene );
-
-  let Car = await createCar( scene );
-  let freeCamera = createFreeCamera( scene, Car );
-
-  // second parameter is the target to follow
-  let followCamera = createFollowCamera( scene, Car );
-  scene.activeCamera = followCamera;
-
-  createLights( scene );
-
-  // Add obstacles
-  setInterval(function() {
-    let obstacle = createObstacle(scene);
-    obstacle.position.z = Car.position.z - 100; // place the obstacle just in front of the car
-  }, 6000);
-
-  return scene;
+function checkCollisions() {
+    let Car = scene.getMeshByName("Car");
+    let obstacles = scene.meshes.filter(mesh => mesh.name == "obstacle");
+    for (let obstacle of obstacles) {
+        if (Car.intersectsMesh(obstacle, false)) {
+            engine.stopRenderLoop();
+            return;
+        }
+    }
 }
+
+async function createScene() {
+    let scene = new BABYLON.Scene( engine );
+    let ground = createGround( scene );
+  
+    let Car = await createCar( scene );
+    let freeCamera = createFreeCamera( scene, Car );
+  
+    // second parameter is the target to follow
+    let followCamera = createFollowCamera( scene, Car );
+    scene.activeCamera = followCamera;
+  
+    createLights( scene );
+  
+    // Add obstacles
+    function addObstacle() {
+        // create first obstacle
+        let obstacle1 = createObstacle(scene);
+        obstacle1.position.z = Car.position.z - 300 - Math.floor(Math.random() * 100); // place the obstacle just in front of the car
+        let lane1 = Math.floor(Math.random() * 3); // randomly choose a lane (0, 1, or 2)
+        let x1 = -30 + lane1 * 30; // compute the x position based on the lane
+        obstacle1.position.x = x1; // set initial position in the lane
+    
+        // start obstacle1 animation
+        scene.beginAnimation(obstacle1, 0, 60, false);
+    
+        // remove obstacle1 after 10 seconds
+        setTimeout(function() {
+            obstacle1.dispose();
+        }, 10000);
+    
+        // create second obstacle
+        let obstacle2 = createObstacle(scene);
+        obstacle2.position.z = Car.position.z - 300 - Math.floor(Math.random() * 100); // place the obstacle just in front of the car
+        let lane2 = Math.floor(Math.random() * 3); // randomly choose a lane (0, 1, or 2)
+        let x2 = -30 + lane2 * 30; // compute the x position based on the lane
+        while (x2 == x1) { // make sure the second obstacle is not in the same lane as the first one
+            lane2 = Math.floor(Math.random() * 3);
+            x2 = -30 + lane2 * 30;
+        }
+        obstacle2.position.x = x2; // set initial position in the lane
+    
+        // start obstacle2 animation
+        scene.beginAnimation(obstacle2, 0, 60, false);
+    
+        // remove obstacle2 after 10 seconds
+        setTimeout(function() {
+            obstacle2.dispose();
+        }, 10000);
+    }    
+    
+    // Wait for 15 seconds before adding obstacles
+    setTimeout(() => {
+        addObstacle();
+        setInterval(addObstacle, 6000);
+    }, 15000);
+  
+    return scene;
+  }
+  
 
 function createGround(scene) {
     const groundOptions = {
         width: 100,
-        height: 500,
+        height: 5000000,
         subdivisions: 20,
         minHeight: 0,
         maxHeight: 0,
         onReady: onGroundCreated
     };
-    const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap("gdhm", "images/hmap1.png", groundOptions, scene);
+    const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap("ground", "images/hmap1.png", groundOptions, scene);
 
     function onGroundCreated() {
         const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
-        groundMaterial.diffuseTexture = new BABYLON.Texture("images/road.png");
+        groundMaterial.diffuseTexture = new BABYLON.Texture("images/road.png", scene);
+        groundMaterial.diffuseTexture.uScale = 1;
+        groundMaterial.diffuseTexture.vScale = 50000;
         ground.material = groundMaterial;
-        ground.checkCollisions = true;
-    
-        animateGround();
+        ground.checkCollisions = true;    
     }
-
-    function animateGround() {
-	
-        const groundLength = 500; // the length of the ground in the z-direction
-        const groundWidth = 100; // the width of the ground in the x-direction
-        const groundPosition = ground.position.clone();
-        const groundOffset = new BABYLON.Vector3(0, 0, -groundLength);
-        ground.position.addInPlace(groundOffset);
-
-        // create a new ground mesh and material
-        const newGround = BABYLON.MeshBuilder.CreateGround("ground", { width: groundWidth, height: groundLength }, scene);
-        const newGroundMaterial = new BABYLON.StandardMaterial("newGroundMaterial", scene);
-        newGroundMaterial.diffuseTexture = new BABYLON.Texture("images/road.png");
-        newGround.material = newGroundMaterial;
-
-        // position the new ground behind the old one
-        newGround.position = groundPosition.clone().subtract(groundOffset);
-
-        // destroy the old ground when it is out of view
-        setTimeout(function() {
-            ground.dispose();
-        },  5000);
-
-        // repeat the process to create a new ground
-        setTimeout(function() {
-            animateGround();
-        },  2000);
-    }
-
     return ground;
 }
 
@@ -120,9 +140,8 @@ function createObstacle(scene) {
     obstacle.scaling = new BABYLON.Vector3(6, 6, 6);
   
     let lane = Math.floor(Math.random() * 3); // randomly choose a lane (0, 1, or 2)
-  
-    let x = -40 + lane * 40; // compute the x position based on the lane
-    obstacle.position = new BABYLON.Vector3(x, 2, -100);
+    let x = -30 + lane * 30; // compute the x position based on the lane
+    obstacle.position = new BABYLON.Vector3(x, 50, -100); // set initial position above the scene
   
     obstacle.checkCollisions = true;
   
@@ -130,8 +149,22 @@ function createObstacle(scene) {
     material.diffuseColor = new BABYLON.Color3(1, 0, 0);
     obstacle.material = material;
   
+    // animate the obstacle's fall
+    let animation = new BABYLON.Animation("obstacleAnimation", "position.y", 60, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+    let keys = [];
+    keys.push({frame: 0, value: 50}); // starting position
+    keys.push({frame: 60, value: 2}); // ending position
+    animation.setKeys(keys);
+    obstacle.animations.push(animation);
+  
+    // remove obstacle after 10 seconds
+    setTimeout(function() {
+        obstacle.dispose();
+    }, 10000);
+  
     return obstacle;
-  }
+}
+
 
 function createLights( scene )
 {
