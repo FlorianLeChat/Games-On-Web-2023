@@ -1,39 +1,51 @@
 let canvas;
 let engine;
 let scene;
-// vars for handling inputs
 let inputStates = {};
-let groundSpeed = 1;
+let groundSpeed = 0.1;
+let distance = 0;
 
 window.onload = startGame;
 
 async function startGame() {
-	canvas = document.querySelector( "#myCanvas" );
-	engine = new BABYLON.Engine( canvas, true );
-	scene = await createScene();
+    canvas = document.querySelector("#myCanvas");
+    engine = new BABYLON.Engine(canvas, true);
+    scene = await createScene();
 
-	// modify some default settings (i.e pointer events to prevent cursor to go
-	// out of the game window)
-	modifySettings();
+    modifySettings();
 
-	let Car = scene.getMeshByName( "Car" );
+    let Car = scene.getMeshByName("Car");
 
-	engine.runRenderLoop(() => {
-        let deltaTime = engine.getDeltaTime(); 
-    
+    const distanceText = document.createElement("div");
+    distanceText.id = "distanceText";
+    document.body.appendChild(distanceText);
+
+    // Set the style of the distanceText element
+    const style = distanceText.style;
+    style.position = "absolute";
+    style.left = "10px";
+    style.top = "10px";
+    style.color = "white";
+    style.fontSize = "24px";
+    style.fontFamily = "Arial";
+
+    engine.runRenderLoop(() => {
+        let deltaTime = engine.getDeltaTime();
+
         Car.move();
-    
-        // Check for collisions with obstacles
-        // checkCollisions();
-            
+
         scene.meshes.forEach((mesh) => {
             if (mesh.name == "ground" || mesh.name == "obstacle") {
-                mesh.position.z += groundSpeed;                
+                mesh.position.z += groundSpeed;
             }
-            });
-        
-            // Increase the ground speed over time
+        });
+
         groundSpeed += 0.001;
+       
+        // Update distance
+        distance += groundSpeed * deltaTime / 1000;
+        const distanceText = document.querySelector("#distanceText");
+        distanceText.textContent = `Distance: ${distance.toFixed(0)} mètres`;
 
         scene.render();
     });
