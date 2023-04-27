@@ -2,7 +2,7 @@ let canvas;
 let engine;
 let scene;
 let inputStates = {};
-let groundSpeed = 0.1;
+let groundSpeed = 0.01;
 let distance = 0;
 
 window.onload = startGame;
@@ -40,7 +40,7 @@ async function startGame() {
             }
         });
 
-        groundSpeed += 0.001;
+        groundSpeed += 0.0005;
        
         // Update distance
         distance += groundSpeed * deltaTime / 1000;
@@ -54,7 +54,10 @@ async function startGame() {
 async function createScene() {
     let scene = new BABYLON.Scene( engine );
     let ground = createGround( scene );
+    ground.position.z = 300;
+
     let itBOX = createitBOX(scene);
+    // itBOX.position.z = -300;
   
     let Car = await createCar( scene, itBOX );
     let freeCamera = createFreeCamera( scene, Car );
@@ -106,7 +109,7 @@ async function createScene() {
     setTimeout(() => {
         addObstacle();
         setInterval(addObstacle, 6000);
-    }, 15000);
+    }, 25000);
   
     return scene;
   }
@@ -136,7 +139,7 @@ function createGround(scene) {
 
 function createitBOX(scene) {
     let itBOX = BABYLON.Mesh.CreateBox("itBOX", 2, scene);
-    itBOX.scaling = new BABYLON.Vector3(6, 2, 14);
+    itBOX.scaling = new BABYLON.Vector3(6, 4, 23);
     itBOX.visibility = false; // make the box invisible
     itBOX.checkCollisions = true;
     return itBOX;
@@ -222,7 +225,7 @@ function createFollowCamera( scene, target )
 {
 	let camera = new BABYLON.FollowCamera( "CarFollowCamera", target.position, scene, target );
 
-	camera.radius = 20; // how far from the object to follow
+	camera.radius = 47; // how far from the object to follow
 	camera.heightOffset = 5; // how high above the object to place the camera
 	camera.rotationOffset = 180; // the viewing angle
 	camera.cameraAcceleration = 0.1; // how fast to move
@@ -239,7 +242,7 @@ async function createCar(scene, itBOX) {
             let Car = newMeshes[0];
             Car.name = "Car";
             Car.position.y = 10;
-            Car.speed = 1;
+            Car.speed = 0;
             Car.frontVector = new BABYLON.Vector3(0, 0, 1);
             Car.laneIndex = 0; // start at the leftmost lane
 
