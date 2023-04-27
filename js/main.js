@@ -136,7 +136,7 @@ function createGround(scene) {
 
 function createitBOX(scene) {
     let itBOX = BABYLON.Mesh.CreateBox("itBOX", 2, scene);
-    itBOX.scaling = new BABYLON.Vector3(6, 2, 12);
+    itBOX.scaling = new BABYLON.Vector3(6, 2, 14);
     itBOX.visibility = false; // make the box invisible
     itBOX.checkCollisions = true;
     return itBOX;
@@ -239,7 +239,7 @@ async function createCar(scene, itBOX) {
             let Car = newMeshes[0];
             Car.name = "Car";
             Car.position.y = 10;
-            Car.speed = 2;
+            Car.speed = 1;
             Car.frontVector = new BABYLON.Vector3(0, 0, 1);
             Car.laneIndex = 0; // start at the leftmost lane
 
