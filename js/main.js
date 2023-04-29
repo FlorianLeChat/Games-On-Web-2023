@@ -35,7 +35,7 @@ async function startGame() {
         Car.move();
 
         scene.meshes.forEach((mesh) => {
-            if (mesh.name == "ground" || mesh.name == "obstacle") {
+            if (mesh.name == "ground" || mesh.name == "obstacle" || mesh.name == "leftSideGround" || mesh.name == "rightSideGround") {
                 mesh.position.z += groundSpeed;
             }
         });
@@ -43,9 +43,9 @@ async function startGame() {
         groundSpeed += 0.0005;
        
         // Update distance
-        distance += groundSpeed * deltaTime / 1000;
+        distance += groundSpeed * deltaTime / 1000 / 1000;
         const distanceText = document.querySelector("#distanceText");
-        distanceText.textContent = `Distance: ${distance.toFixed(0)} mètres`;
+        distanceText.textContent = `Distance: ${distance.toFixed(2)} Km`;
 
         scene.render();
     });
@@ -54,10 +54,12 @@ async function startGame() {
 async function createScene() {
     let scene = new BABYLON.Scene( engine );
     let ground = createGround( scene );
+    let sidegrounds = createSideGrounds( scene );
+
+    let skybox = createSkybox(scene);
     ground.position.z = 300;
 
     let itBOX = createitBOX(scene);
-    // itBOX.position.z = -300;
   
     let Car = await createCar( scene, itBOX );
     let freeCamera = createFreeCamera( scene, Car );
@@ -137,6 +139,56 @@ function createGround(scene) {
     return ground;
 }
 
+function createSideGrounds(scene) {
+    const sideGroundOptions = {
+        width: 100,
+        height: 5000000,
+        subdivisions: 20,
+        minHeight: 0,
+        maxHeight: 0,
+        onReady: onSideGroundsCreated
+    };
+    
+    // Create left side ground
+    const leftSideGround = BABYLON.MeshBuilder.CreateGroundFromHeightMap("leftSideGround", "images/hmap1.png", sideGroundOptions, scene);
+    leftSideGround.position.x = -100; // Adjust position to left of main ground
+    
+    // Create right side ground
+    const rightSideGround = BABYLON.MeshBuilder.CreateGroundFromHeightMap("rightSideGround", "images/hmap1.png", sideGroundOptions, scene);
+    rightSideGround.position.x = 100; // Adjust position to right of main ground
+
+    function onSideGroundsCreated() {
+        const sideGroundMaterial = new BABYLON.StandardMaterial("sideGroundMaterial", scene);
+        sideGroundMaterial.diffuseTexture = new BABYLON.Texture("images/trottoir.jpeg", scene);
+        sideGroundMaterial.diffuseTexture.uScale = 1;
+        sideGroundMaterial.diffuseTexture.vScale = 50000;
+        
+        leftSideGround.material = sideGroundMaterial;
+        rightSideGround.material = sideGroundMaterial;
+        
+        // Enable collisions for both side grounds
+        leftSideGround.checkCollisions = true;
+        rightSideGround.checkCollisions = true;
+    }
+    
+    return [leftSideGround, rightSideGround]; // Return an array containing both side grounds
+}
+
+function createSkybox(scene) {
+    // Création d'une material
+       var sMaterial = new BABYLON.StandardMaterial("skyboxMaterial", scene);
+       sMaterial.backFaceCulling = false;
+       sMaterial.reflectionTexture = new BABYLON.CubeTexture("textures/TropicalSunnyDay", scene);
+       sMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
+  
+       // Création d'un cube avec la material adaptée
+       var skybox = BABYLON.Mesh.CreateBox("skybox", 10000, scene);
+       skybox.material = sMaterial;
+       skybox.position.z = 400;
+       skybox.position.y = -200;
+  }
+
+
 function createitBOX(scene) {
     let itBOX = BABYLON.Mesh.CreateBox("itBOX", 2, scene);
     itBOX.scaling = new BABYLON.Vector3(6, 4, 23);
@@ -193,10 +245,12 @@ function createObstacle(scene, itBOX) {
 
 function createLights( scene )
 {
-	// i.e sun light with all light rays parallels, the vector is the direction.
-	let light0 = new BABYLON.DirectionalLight( "dir0", new BABYLON.Vector3( -1, -1, 0 ), scene );
-
+  // Create a directional light with a direction pointing towards the setting sun
+  let light0 = new BABYLON.DirectionalLight( "dir0", new BABYLON.Vector3( 0.5, -0.5, -0.5 ), scene );
+  light0.intensity = 0.8; // Decrease the intensity to simulate a setting sun
+  light0.diffuse = new BABYLON.Color3(1, 0.7, 0.5); // Use a warm color to simulate sunset
 }
+
 
 function createFreeCamera( scene )
 {
@@ -253,6 +307,7 @@ async function createCar(scene, itBOX) {
             const rightmostLane = lanes[lanes.length - 1];
 
             Car.move = () => {
+                
                 let yMovement = 0;
 
                 if (Car.position.y > 2) {
