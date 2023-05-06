@@ -1,11 +1,71 @@
 html, body {
     padding:0px;
     margin:0px;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+#gif-container {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: -1;
+}
+
+#gif-container img {
+    height: 100%;
+    width: 125%;
+}
+
+#start-page button {
+    position: absolute;
+    bottom: 0;
+    padding: 1rem;
+    text-align: center;
+    left: 37%;
+    margin-bottom: 25rem;
+}
+
+#start-page h1 {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 4rem;
+    text-align: center;
+    color: rgb(147,138,138);
+    text-shadow: 2px 2px #ffffff;
+    margin-top: 6rem;
+    margin-left: 2rem;
+    margin-right: 2rem;
+}
+
+#start-button {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 2rem;
+    padding: 1rem 2rem;
+    border-radius: 0.5rem;
+    background-color: #1f1f1f;
+    color: #e7e3e3;
+    cursor: pointer;
+}
+
+#start-button:hover {
+    transform: scale(1.1);
+    background-color: #2f2f2f;
+}
+
+.fade-in {
+    animation: fade-in 2s;
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 #myCanvas {
-    border:1px solid red;
     width:100%;
     height:100%;
 }
-

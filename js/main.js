@@ -5,9 +5,24 @@ let inputStates = {};
 let groundSpeed = 0.01;
 let distance = 0;
 
-window.onload = startGame;
+window.onload = () => {
+  const startPage = document.querySelector("#start-page");
+  const startButton = document.querySelector("#start-button");
+  startButton.addEventListener("click", startGame);
+  startPage.style.display = "block";
+  startPage.classList.add('fade-in');
+  startButton.addEventListener('mouseover', () => {
+    startButton.classList.add('animated', 'pulse');
+  });
+  
+  startButton.addEventListener('animationend', () => {
+    startButton.classList.remove('animated', 'pulse');
+  });
+};
 
 async function startGame() {
+  const startPage = document.querySelector("#start-page");
+  startPage.style.display = "none";
     canvas = document.querySelector("#myCanvas");
     engine = new BABYLON.Engine(canvas, true);
     scene = await createScene();
@@ -27,25 +42,27 @@ async function startGame() {
     style.top = "10px";
     style.color = "white";
     style.fontSize = "24px";
-    style.fontFamily = "Arial";
+    style.fontFamily = "'Press Start 2P', cursive";
 
-    engine.runRenderLoop(() => {
+
+    engine.runRenderLoop(async () => {
         let deltaTime = engine.getDeltaTime();
 
         Car.move();
-
-        scene.meshes.forEach((mesh) => {
+          
+          scene.meshes.forEach((mesh) => {
             if (mesh.name == "ground" || mesh.name == "obstacle" || mesh.name == "leftSideGround" || mesh.name == "rightSideGround" || mesh.name == "palm" || mesh.name == "palmtree") {
-                mesh.position.z += groundSpeed;
+              mesh.position.z += groundSpeed;
             }
-        });
+          });
+          
 
         groundSpeed += 0.0005;
        
         // Update distance
-        distance += groundSpeed * deltaTime / 1000 / 1000;
+        distance += groundSpeed * deltaTime / 1000;
         const distanceText = document.querySelector("#distanceText");
-        distanceText.textContent = `Distance: ${distance.toFixed(2)} Km`;
+        distanceText.textContent = `Distance : ${distance.toFixed(0)} mètres`;
 
         scene.render();
     });
@@ -57,18 +74,7 @@ async function createScene() {
     let sidegrounds = createSideGrounds( scene );
 
     let skybox = createSkybox(scene);
-    ground.position.z = 300;
-
-    let numberOfPalmTrees = 5;
-    let palmTreeDistance = 200;
-    for (let i = 0; i < numberOfPalmTrees; i++) {
-        let xPosition = (i % 2 === 0) ? -60 : 60; // alternate between two x positions
-        let zPosition = -100 - (i * palmTreeDistance); // calculate the z position based on the index
-      
-        let palm = await createPalm(scene, new BABYLON.Vector3(xPosition, 0, zPosition));
-        let palmTree = await createPalmTree(scene, new BABYLON.Vector3(-xPosition, 0, zPosition));
-      }
-      
+    ground.position.z = 300;    
 
     let itBOX = createitBOX(scene);
   
@@ -80,8 +86,7 @@ async function createScene() {
     scene.activeCamera = followCamera;
   
     createLights( scene );
-  
-
+    
     // Add obstacles
     function addObstacle() {
         // create first obstacle
@@ -124,18 +129,17 @@ async function createScene() {
         addObstacle();
         setInterval(addObstacle, 6000);
     }, 25000);
-  
+
     return scene;
   }
   
-
 function createGround(scene) {
     const groundOptions = {
         width: 100,
         height: 5000000,
         subdivisions: 20,
         minHeight: 0,
-        maxHeight: 2,
+        maxHeight: 0,
         onReady: onGroundCreated
     };
     const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap("ground", "images/hmap1.png", groundOptions, scene);
@@ -152,89 +156,58 @@ function createGround(scene) {
 }
 
 function createSideGrounds(scene) {
-    const sideGroundOptions = {
-      width: 100,
-      height: 5000000,
-      subdivisions: 20,
-      minHeight: 0,
-      maxHeight: 0,
-      onReady: onSideGroundsCreated,
-    };
-  
-    // Create left side ground
-    const leftSideGround = BABYLON.MeshBuilder.CreateGroundFromHeightMap(
-      "leftSideGround",
-      "images/hmap1.png",
-      sideGroundOptions,
-      scene
-    );
-    leftSideGround.position.x = -100; // Adjust position to left of main ground
-    leftSideGround.position.y = 1; // Adjust position to left of main ground
+  const sideGroundOptions = {
+    width: 5000,
+    height: 5000000,
+    subdivisions: 200,
+    minHeight: -3,
+    maxHeight: 10,
+    onReady: onSideGroundsCreated,
+  };
 
-    // Create right side ground
-    const rightSideGround = BABYLON.MeshBuilder.CreateGroundFromHeightMap(
-      "rightSideGround",
-      "images/hmap1.png",
-      sideGroundOptions,
+  // Create left side ground
+  const leftSideGround = BABYLON.MeshBuilder.CreateGroundFromHeightMap(
+    "leftSideGround",
+    "images/hmap2.jpeg", // la hauteur de carte est définie ici
+    sideGroundOptions,
+    scene
+  );
+  leftSideGround.position.x = -1000; // Adjust position to left of main ground
+
+
+  // Create right side ground
+  const rightSideGround = BABYLON.MeshBuilder.CreateGroundFromHeightMap(
+    "rightSideGround",
+    "images/hmap2.jpeg", // la hauteur de carte est définie ici
+    sideGroundOptions,
+    scene
+  );
+  rightSideGround.position.x = 1000; // Adjust position to right of main ground
+
+
+  function onSideGroundsCreated() {
+    const sideGroundMaterial = new BABYLON.StandardMaterial(
+      "sideGroundMaterial",
       scene
     );
-    rightSideGround.position.x = 100; // Adjust position to right of main ground
-    rightSideGround.position.y = 1; // Adjust position to right of main ground
-  
-    function onSideGroundsCreated() {
-      const sideGroundMaterial = new BABYLON.StandardMaterial(
-        "sideGroundMaterial",
-        scene
-      );
-      sideGroundMaterial.diffuseTexture = new BABYLON.Texture(
-        "images/trottoir.png",
-        scene
-      );
-      sideGroundMaterial.diffuseTexture.uScale = 1;
-      sideGroundMaterial.diffuseTexture.vScale = 50000;
-  
-      leftSideGround.material = sideGroundMaterial;
-      rightSideGround.material = sideGroundMaterial;
-  
-      // Enable collisions for both side grounds
-      leftSideGround.checkCollisions = true;
-      rightSideGround.checkCollisions = true;
-    }
-  
-    return [leftSideGround, rightSideGround]; // Return an array containing both side grounds
+    sideGroundMaterial.diffuseTexture = new BABYLON.Texture(
+      "images/desert.jpeg", // ajoutez une texture pour simuler du sable
+      scene
+    );
+    sideGroundMaterial.diffuseTexture.uScale = 30;
+    sideGroundMaterial.diffuseTexture.vScale = 10000;
+
+    leftSideGround.material = sideGroundMaterial;
+    rightSideGround.material = sideGroundMaterial;
+
+    // Enable collisions for both side grounds
+    leftSideGround.checkCollisions = true;
+    rightSideGround.checkCollisions = true;
   }
 
-  async function createPalm(scene, position) {
-    return new Promise(resolve => {
-        BABYLON.SceneLoader.ImportMesh("", "./models/", "palm.glb", scene, function(newMeshes) {
-            let palm = newMeshes[0];
-            palm.name = "palm";
-            palm.scaling = new BABYLON.Vector3(3, 3, 5);
-            palm.rotation.y = Math.PI;
-
-            // Set the position
-            palm.position = position;
-
-            resolve(palm);
-        });
-    });
+  return [leftSideGround, rightSideGround]; // Return an array containing both side grounds
 }
 
-async function createPalmTree(scene, position) {
-    return new Promise(resolve => {
-        BABYLON.SceneLoader.ImportMesh("", "./models/", "palmtree.glb", scene, function(newMeshes) {
-            let palmtree = newMeshes[0];
-            palmtree.name = "palmtree";
-            palmtree.scaling = new BABYLON.Vector3(8, 5, 5);
-            palmtree.rotation.y = Math.PI;
-
-            // Set the position
-            palmtree.position = position;
-
-            resolve(palmtree);
-        });
-    });
-}
 
 function createSkybox(scene) {
     // Création d'une material
