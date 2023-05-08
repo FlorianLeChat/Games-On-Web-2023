@@ -3,7 +3,9 @@ let engine;
 let scene;
 let inputStates = {};
 let groundSpeed = 1;
+let distanceText;
 let distance = 0;
+import { startGame2 } from "./main2.js";
 
 window.onload = () => {
   const startPage = document.querySelector("#start-page");
@@ -31,7 +33,7 @@ async function startGame() {
 
     let Car = scene.getMeshByName("Car");
 
-    const distanceText = document.createElement("div");
+    distanceText = document.createElement("div");
     distanceText.id = "distanceText";
     document.body.appendChild(distanceText);
 
@@ -242,6 +244,8 @@ function createObstacle(scene, itBOX) {
                     parameter: { mesh: itBOX },
                 },
                 (evt) => {
+                    distanceText.remove();
+
                     // Create a div to hold distance and buttons
                     const gameResult = document.createElement("div");
                     gameResult.style.position = "absolute";
@@ -260,12 +264,12 @@ function createObstacle(scene, itBOX) {
                     gameResult.appendChild(distanceText1);
 
                     // Add distance text to gameResult div
-                    const distanceText = document.createElement("p");
-                    distanceText.textContent =`Distance parcourue  ${distance.toFixed(0)} mètres`;
-                    distanceText.style.fontFamily = "'Press Start 2P', cursive";
-                    distanceText.style.color = "rgb(147,138,138)";
-                    distanceText.style.fontSize = "40px";
-                    gameResult.appendChild(distanceText);
+                    const distanceText2 = document.createElement("p");
+                    distanceText2.textContent =`Distance parcourue  ${distance.toFixed(0)} mètres`;
+                    distanceText2.style.fontFamily = "'Press Start 2P', cursive";
+                    distanceText2.style.color = "rgb(147,138,138)";
+                    distanceText2.style.fontSize = "40px";
+                    gameResult.appendChild(distanceText2);
                     
                     // Add Try Again button to gameResult div
                     const tryAgain = document.createElement("button");
@@ -279,7 +283,11 @@ function createObstacle(scene, itBOX) {
                     tryAgain.style.background = "#ddd";
                     tryAgain.style.color = "#000";
                     tryAgain.style.cursor = "pointer";
-                    tryAgain.addEventListener("click", () => window.location.reload());
+                    tryAgain.addEventListener("click", () => {
+                        gameResult.remove(); // supprime la div gameResult de la page
+                        distance = 0; // réinitialise la distance
+                        startGame(); // redémarre le jeu
+                    });           
                     
                     // Add End Game button to gameResult div
                     const endGame = document.createElement("button");
@@ -293,8 +301,14 @@ function createObstacle(scene, itBOX) {
                     endGame.style.background = "#ddd";
                     endGame.style.color = "#000";
                     endGame.style.cursor = "pointer";
-                    endGame.addEventListener("click", () => window.close());
+                    endGame.addEventListener("click", () => {
+                        // Supprime la div gameResult de la page
+                        gameResult.remove();
+                        // Lance la nouvelle scène startGame2
+                        startGame2();
+                    });
                     
+
                     // Stop the game
                     engine.stopRenderLoop();
                     }
@@ -328,7 +342,6 @@ function createObstacle(scene, itBOX) {
   
     return obstacle;
 }
-
 
 function createLights( scene )
 {
