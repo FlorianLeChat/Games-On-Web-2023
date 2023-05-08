@@ -2,7 +2,7 @@ let canvas;
 let engine;
 let scene;
 let inputStates = {};
-let groundSpeed = 0.01;
+let groundSpeed = 1;
 let distance = 0;
 
 window.onload = () => {
@@ -128,7 +128,7 @@ async function createScene() {
     setTimeout(() => {
         addObstacle();
         setInterval(addObstacle, 6000);
-    }, 25000);
+    }, 1000);
 
     return scene;
   }
@@ -242,10 +242,62 @@ function createObstacle(scene, itBOX) {
                     parameter: { mesh: itBOX },
                 },
                 (evt) => {
-                   console.log("STOP")
-                   engine.stopRenderLoop();
+                    // Create a div to hold distance and buttons
+                    const gameResult = document.createElement("div");
+                    gameResult.style.position = "absolute";
+                    gameResult.style.left = "50%";
+                    gameResult.style.top = "40%";
+                    gameResult.style.transform = "translate(-50%, -50%)";
+                    gameResult.style.textAlign = "center";
+                    document.body.appendChild(gameResult);
+                    
+                    // Add distance text to gameResult div
+                    const distanceText1 = document.createElement("p");
+                    distanceText1.textContent =`GAME OVER`;
+                    distanceText1.style.fontFamily = "'Press Start 2P', cursive";
+                    distanceText1.style.color = "rgb(147,138,138)";
+                    distanceText1.style.fontSize = "50px";
+                    gameResult.appendChild(distanceText1);
 
-                }
+                    // Add distance text to gameResult div
+                    const distanceText = document.createElement("p");
+                    distanceText.textContent =`Distance parcourue  ${distance.toFixed(0)} mètres`;
+                    distanceText.style.fontFamily = "'Press Start 2P', cursive";
+                    distanceText.style.color = "rgb(147,138,138)";
+                    distanceText.style.fontSize = "40px";
+                    gameResult.appendChild(distanceText);
+                    
+                    // Add Try Again button to gameResult div
+                    const tryAgain = document.createElement("button");
+                    tryAgain.textContent = "Try Again";
+                    gameResult.appendChild(tryAgain);
+                    tryAgain.style.fontFamily = "'Press Start 2P', cursive";
+                    tryAgain.style.marginRight = "10px";
+                    tryAgain.style.padding = "10px 20px";
+                    tryAgain.style.fontSize = "24px";
+                    tryAgain.style.borderRadius = "10px";
+                    tryAgain.style.background = "#ddd";
+                    tryAgain.style.color = "#000";
+                    tryAgain.style.cursor = "pointer";
+                    tryAgain.addEventListener("click", () => window.location.reload());
+                    
+                    // Add End Game button to gameResult div
+                    const endGame = document.createElement("button");
+                    endGame.textContent = "End Game";
+                    gameResult.appendChild(endGame);
+                    endGame.style.fontFamily = "'Press Start 2P', cursive";
+                    endGame.style.marginLeft = "10px";
+                    endGame.style.padding = "10px 20px";
+                    endGame.style.fontSize = "24px";
+                    endGame.style.borderRadius = "10px";
+                    endGame.style.background = "#ddd";
+                    endGame.style.color = "#000";
+                    endGame.style.cursor = "pointer";
+                    endGame.addEventListener("click", () => window.close());
+                    
+                    // Stop the game
+                    engine.stopRenderLoop();
+                    }
             )
         );
     obstacle.actionManager = actionManager;
