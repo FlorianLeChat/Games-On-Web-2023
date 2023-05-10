@@ -3,6 +3,7 @@
 let canvas;
 let engine;
 let scene;
+let groundSpeed = 1;
 
 export function startGame2() {
   canvas = document.querySelector("#myCanvas");
@@ -18,7 +19,15 @@ export function startGame2() {
 
   scene.toRender = () => {
     let deltaTime = engine.getDeltaTime();
-
+    
+    scene.meshes.forEach((mesh) => {
+      if (mesh.name == "ground" || mesh.name == "obstacle") {
+        mesh.position.z += groundSpeed;
+      }
+    });
+    
+    groundSpeed += 0.0005;
+    
     tank.move();
 
     scene.render();
@@ -161,7 +170,7 @@ function createGround(scene) {
       "groundMaterial",
       scene
     );
-    groundMaterial.diffuseTexture = new BABYLON.Texture("images/grass2.jpeg");
+    groundMaterial.diffuseTexture = new BABYLON.Texture("images/grass.jpeg");
     ground.material = groundMaterial;
     // to be taken into account by collision detection
     ground.checkCollisions = true;

@@ -325,14 +325,15 @@ function createObstacle(scene, itBOX) {
     obstacle.checkCollisions = true;
   
     let material = new BABYLON.StandardMaterial("obstacleMaterial", scene);
-    material.diffuseColor = new BABYLON.Color3(1, 0, 0);
+    material.diffuseTexture = new BABYLON.Texture("images/barils.png", scene);
+    material.diffuseTexture.hasAlpha = true; // Vérifie si la texture a une canal alpha (transparence)
     obstacle.material = material;
   
     // animate the obstacle's fall
     let animation = new BABYLON.Animation("obstacleAnimation", "position.y", 60, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
     let keys = [];
     keys.push({frame: 0, value: 50}); // starting position
-    keys.push({frame: 60, value: 2}); // ending position
+    keys.push({frame: 60, value: 4}); // ending position
     animation.setKeys(keys);
     obstacle.animations.push(animation);
   
