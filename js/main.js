@@ -236,6 +236,18 @@ function createitBOX(scene) {
 
 function createObstacle(scene, itBOX) {
     let obstacle = BABYLON.Mesh.CreateBox("obstacle", 2, scene);
+    
+    const collisionSound = new BABYLON.Sound(
+        "collisionSound",
+        "sounds/over.wav",
+        scene,
+        null,
+        {
+          loop: false,
+          autoplay: false
+        }
+      );
+
     const actionManager = new BABYLON.ActionManager(scene);
         actionManager.registerAction(
             new BABYLON.ExecuteCodeAction(
@@ -262,6 +274,7 @@ function createObstacle(scene, itBOX) {
                     distanceText1.style.color = "rgb(147,138,138)";
                     distanceText1.style.fontSize = "50px";
                     gameResult.appendChild(distanceText1);
+                    
 
                     // Add distance text to gameResult div
                     const distanceText2 = document.createElement("p");
@@ -308,7 +321,7 @@ function createObstacle(scene, itBOX) {
                         // Lance la nouvelle scène startGame2
                         startGame2();
                     });
-                    
+                    collisionSound.play();
 
                     // Stop the game
                     engine.stopRenderLoop();
@@ -323,6 +336,10 @@ function createObstacle(scene, itBOX) {
     obstacle.position = new BABYLON.Vector3(x, 50, -100); // set initial position above the scene
   
     obstacle.checkCollisions = true;
+    
+
+    // create a material for the obstacle
+    
   
     let material = new BABYLON.StandardMaterial("obstacleMaterial", scene);
     material.diffuseTexture = new BABYLON.Texture("images/barils.png", scene);

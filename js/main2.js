@@ -1,450 +1,543 @@
-//import Dude from "./Dude.js";
-
 let canvas;
 let engine;
 let scene;
+let inputStates = {};
 let groundSpeed = 1;
+let distanceText;
+let distance = 0;
 
-export function startGame2() {
+export async function startGame2() {
   canvas = document.querySelector("#myCanvas");
-  engine = new BABYLON.Engine(canvas, true);
-  scene = createScene();
+    engine = new BABYLON.Engine(canvas, true);
+    scene = await createScene();
 
-  // enable physics
-  scene.enablePhysics();
+    modifySettings();
 
-  modifySettings();
+    let Bike = scene.getMeshByName("Bike");
 
-  let tank = scene.getMeshByName("Tank");
+    distanceText = document.createElement("div");
+    distanceText.id = "distanceText";
+    document.body.appendChild(distanceText);
 
-  scene.toRender = () => {
-    let deltaTime = engine.getDeltaTime();
+    // Set the style of the distanceText element
+    const style = distanceText.style;
+    style.position = "absolute";
+    style.left = "10px";
+    style.top = "10px";
+    style.color = "white";
+    style.fontSize = "24px";
+    style.fontFamily = "'Press Start 2P', cursive";
+
+
+    engine.runRenderLoop(async () => {
+        let deltaTime = engine.getDeltaTime();
+
+        Bike.move();
+          
+          scene.meshes.forEach((mesh) => {
+            if (mesh.name == "ground" || mesh.name == "obstacle" || mesh.name == "leftSideGround" || mesh.name == "rightSideGround" || mesh.name == "palm" || mesh.name == "palmtree") {
+              mesh.position.z += groundSpeed;
+            }
+          });
+          
+
+        groundSpeed += 0.0005;
+       
+        // Update distance
+        distance += groundSpeed * deltaTime / 1000;
+        const distanceText = document.querySelector("#distanceText");
+        distanceText.textContent = `Distance : ${distance.toFixed(0)} mètres`;
+
+        scene.render();
+    });
+}
+
+async function createScene() {
+    let scene = new BABYLON.Scene( engine );
+    let ground = createGround( scene );
+    let sidegrounds = createSideGrounds( scene );
+
+    let skybox = createSkybox(scene);
+    ground.position.z = 300;    
+    ground.position.y = 10;    
+
+
+    let itBOX = createitBOX(scene);
+  
+    let Bike = await createBike( scene, itBOX );
+    let freeCamera = createFreeCamera( scene, Bike );
+  
+    // second parameter is the target to follow
+    let followCamera = createFollowCamera( scene, Bike );
+    scene.activeCamera = followCamera;
+  
+    createLights( scene );
     
-    scene.meshes.forEach((mesh) => {
-      if (mesh.name == "ground" || mesh.name == "obstacle") {
-        mesh.position.z += groundSpeed;
-      }
-    });
+    // Add obstacles
+    function addObstacle() {
+        // create first obstacle
+        let obstacle1 = createObstacle(scene, itBOX);
+        obstacle1.position.z = Bike.position.z - 300 - Math.floor(Math.random() * 100); // place the obstacle just in front of the bike
+        let lane1 = Math.floor(Math.random() * 3); // randomly choose a lane (0, 1, or 2)
+        let x1 = -30 + lane1 * 30; // compute the x position based on the lane
+        obstacle1.position.x = x1; // set initial position in the lane
     
-    groundSpeed += 0.0005;
+        // start obstacle1 animation
+        scene.beginAnimation(obstacle1, 0, 40, false);
     
-    tank.move();
+        // remove obstacle1 after 10 seconds
+        setTimeout(function() {
+            obstacle1.dispose();
+        }, 10000);
+    
+        // create second obstacle
+        let obstacle2 = createObstacle(scene, itBOX);
+        obstacle2.position.z = Bike.position.z - 300 - Math.floor(Math.random() * 100); // place the obstacle just in front of the bike
+        let lane2 = Math.floor(Math.random() * 3); // randomly choose a lane (0, 1, or 2)
+        let x2 = -30 + lane2 * 30; // compute the x position based on the lane
+        while (x2 == x1) { // make sure the second obstacle is not in the same lane as the first one
+            lane2 = Math.floor(Math.random() * 3);
+            x2 = -30 + lane2 * 30;
+        }
+        obstacle2.position.x = x2; // set initial position in the lane
+    
+        // start obstacle2 animation
+        scene.beginAnimation(obstacle2, 0, 40, false);
+    
+        // remove obstacle2 after 10 seconds
+        setTimeout(function() {
+            obstacle2.dispose();
+        }, 6000);
+    }    
+    
+    // Wait for 15 seconds before adding obstacles
+    setTimeout(() => {
+        addObstacle();
+        setInterval(addObstacle, 3000);
+    }, 4000);
 
-    scene.render();
-  };
+    return scene;
+  }
 
-  //engine.runRenderLoop();
-  // instead of running the game, we tell instead the asset manager to load.
-  // when finished it will execute its onFinish callback that will run the loop
-  scene.assetsManager.load();
-}
-
-function createScene() {
-  let scene = new BABYLON.Scene(engine);
-
-  scene.assetsManager = configureAssetManager(scene);
-
-  let ground = createGround(scene);
-  //let freeCamera = createFreeCamera(scene);
- 
-  let skybox = createSkybox(scene);
-
-  let tank = createTank(scene);
-
-  // second parameter is the target to follow
-  scene.followCameraTank = createFollowCamera(scene, tank);
-  scene.activeCamera = scene.followCameraTank;
-
-  createLights(scene);
-
-  loadSounds(scene);
-
-  return scene;
-}
-
-function configureAssetManager(scene) {
-  // useful for storing references to assets as properties. i.e scene.assets.cannonsound, etc.
-  scene.assets = {};
-
-  let assetsManager = new BABYLON.AssetsManager(scene);
-
-  assetsManager.onProgress = function (
-    remainingCount,
-    totalCount,
-    lastFinishedTask
-  ) {
-    engine.loadingUIText =
-      "We are loading the scene. " +
-      remainingCount +
-      " out of " +
-      totalCount +
-      " items still need to be loaded.";
-    console.log(
-      "We are loading the scene. " +
-      remainingCount +
-      " out of " +
-      totalCount +
-      " items still need to be loaded."
-    );
-  };
-
-  assetsManager.onFinish = function (tasks) {
-    engine.runRenderLoop(function () {
-      scene.toRender();
-    });
-  };
-
-  return assetsManager;
-}
-
-function loadSounds(scene) {
-  var assetsManager = scene.assetsManager;
-
-  var binaryTask = assetsManager.addBinaryFileTask("laserSound", "sounds/laser.wav");
-  binaryTask.onSuccess = function (task) {
-    scene.assets.laserSound = new BABYLON.Sound("laser", task.data, scene, null,
-      { loop: false, spatialSound: true }
-    );
-  };
-
-  binaryTask = assetsManager.addBinaryFileTask("dieSound", "sounds/dying.wav");
-  binaryTask.onSuccess = function (task) {
-    scene.assets.dieSound = new BABYLON.Sound("die", task.data, scene, null, {
-      loop: false,
-      spatialSound: true
-    });
-  };
-
-  binaryTask = assetsManager.addBinaryFileTask("gunSound", "sounds/shot.wav");
-  binaryTask.onSuccess = function (task) {
-    scene.assets.gunSound = new BABYLON.Sound("gun", task.data, scene, null, {
-      loop: false,
-    });
-  };
-
-  binaryTask = assetsManager.addBinaryFileTask("explosion","sounds/explosion.mp3");
-  binaryTask.onSuccess = function (task) {
-    scene.assets.explosion = new BABYLON.Sound(
-      "explosion",
-      task.data,
-      scene,
-      null,
-      { loop: false, spatialSound: true }
-    );
-  };
-
-  binaryTask = assetsManager.addBinaryFileTask("pirates", "sounds/pirateFun.mp3");
-  binaryTask.onSuccess = function (task) {
-    scene.assets.pirateMusic = new BABYLON.Sound(
-      "piratesFun",
-      task.data,
-      scene,
-      null,
-      {
-        loop: true,
-        autoplay: true,
-      }
-    );
-  };
-}
-
+  // function createGround(scene) {
+  //   const groundOptions = {
+  //     width: 2000,
+  //     height: 20000,
+  //     subdivisions: 50,
+  //     minHeight: -50,
+  //     maxHeight: 50,
+  //     onReady: onGroundCreated,
+  //   };
+  //   //scene is optional and defaults to the current scene
+  //   const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap(
+  //     "gdhm",
+  //     "images/hmap2.jpg",
+  //     groundOptions,
+  //     scene
+  //   );
+  
+  //   function onGroundCreated() {
+  //     const groundMaterial = new BABYLON.StandardMaterial(
+  //       "groundMaterial",
+  //       scene
+  //     );
+  //     groundMaterial.diffuseTexture = new BABYLON.Texture("images/grass.jpeg");
+  //     ground.material = groundMaterial;
+  //     // to be taken into account by collision detection
+  //     ground.checkCollisions = true;
+  //     //groundMaterial.wireframe=true;
+  //     groundMaterial.diffuseTexture.uScale = 100;
+  //     groundMaterial.diffuseTexture.vScale = 1000;
+  //     // for physic engine
+  //     ground.physicsImpostor = new BABYLON.PhysicsImpostor(
+  //       ground,
+  //       BABYLON.PhysicsImpostor.HeightmapImpostor,
+  //       { mass: 0 },
+  //       scene
+  //     );
+  //   }
+  //   return ground;
+  // }
+  
 function createGround(scene) {
-  const groundOptions = {
+    const groundOptions = {
+        width: 100,
+        height: 21000,
+        subdivisions: 20,
+        minHeight: -2,
+        maxHeight: 2,
+        onReady: onGroundCreated,
+    };
+    const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap("ground", "images/hmap2.jpeg", groundOptions, scene);
+
+    function onGroundCreated() {
+        const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
+        groundMaterial.diffuseTexture = new BABYLON.Texture("images/cloud1.jpeg", scene);
+        groundMaterial.diffuseTexture.uScale = 1;
+        groundMaterial.diffuseTexture.vScale = 2;
+        ground.material = groundMaterial;
+        ground.checkCollisions = true;    
+    }
+    return ground;
+}
+
+function createSideGrounds(scene) {
+  const sideGroundOptions = {
     width: 2000,
     height: 20000,
     subdivisions: 50,
     minHeight: -50,
-    maxHeight: 50,
-    onReady: onGroundCreated,
+    maxHeight: 15,
+    onReady: onSideGroundsCreated,
   };
-  //scene is optional and defaults to the current scene
-  const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap(
-    "gdhm",
-    "images/hmap2.jpg",
-    groundOptions,
+
+  // Create left side ground
+  const leftSideGround = BABYLON.MeshBuilder.CreateGroundFromHeightMap(
+    "leftSideGround",
+    "images/hmap2.jpg", // la hauteur de bikete est définie ici
+    sideGroundOptions,
     scene
   );
+  leftSideGround.position.x = -1040; // Adjust position to left of main ground
 
-  function onGroundCreated() {
-    const groundMaterial = new BABYLON.StandardMaterial(
-      "groundMaterial",
+
+  // Create right side ground
+  const rightSideGround = BABYLON.MeshBuilder.CreateGroundFromHeightMap(
+    "rightSideGround",
+    "images/hmap2.jpg", // la hauteur de bikete est définie ici
+    sideGroundOptions,
+    scene
+  );
+  rightSideGround.position.x = 1030; // Adjust position to right of main ground
+
+
+  function onSideGroundsCreated() {
+    const sideGroundMaterial = new BABYLON.StandardMaterial(
+      "sideGroundMaterial",
       scene
     );
-    groundMaterial.diffuseTexture = new BABYLON.Texture("images/grass.jpeg");
-    ground.material = groundMaterial;
-    // to be taken into account by collision detection
-    ground.checkCollisions = true;
-    //groundMaterial.wireframe=true;
-    groundMaterial.diffuseTexture.uScale = 100;
-    groundMaterial.diffuseTexture.vScale = 1000;
-    // for physic engine
-    ground.physicsImpostor = new BABYLON.PhysicsImpostor(
-      ground,
-      BABYLON.PhysicsImpostor.HeightmapImpostor,
-      { mass: 0 },
+    sideGroundMaterial.diffuseTexture = new BABYLON.Texture(
+      "images/grass.jpeg", // ajoutez une texture pour simuler du sable
       scene
     );
+    sideGroundMaterial.diffuseTexture.uScale = 100;
+    sideGroundMaterial.diffuseTexture.vScale = 1000;
+
+    leftSideGround.material = sideGroundMaterial;
+    rightSideGround.material = sideGroundMaterial;
+
+    // Enable collisions for both side grounds
+    leftSideGround.checkCollisions = true;
+    rightSideGround.checkCollisions = true;
   }
-  return ground;
+
+  return [leftSideGround, rightSideGround]; // Return an array containing both side grounds
+}
+
+
+function createSkybox(scene) {
+    // Création d'une material
+       var sMaterial = new BABYLON.StandardMaterial("skyboxMaterial", scene);
+       sMaterial.backFaceCulling = false;
+       sMaterial.reflectionTexture = new BABYLON.CubeTexture("textures2/TropicalSunnyDay", scene);
+       sMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
+  
+       // Création d'un cube avec la material adaptée
+       var skybox = BABYLON.Mesh.CreateBox("skybox", 10000, scene);
+       skybox.material = sMaterial;
+       skybox.position.z = 400;
+       skybox.position.y = -200;
+  }
+
+
+function createitBOX(scene) {
+    let itBOX = BABYLON.Mesh.CreateBox("itBOX", 2, scene);
+    itBOX.scaling = new BABYLON.Vector3(6, 4, 23);
+    itBOX.visibility = false; // make the box invisible
+    itBOX.checkCollisions = true;
+    return itBOX;
+}
+
+function createObstacle(scene, itBOX) {
+    let obstacle = BABYLON.Mesh.CreateBox("obstacle", 2, scene);
+    const actionManager = new BABYLON.ActionManager(scene);
+        actionManager.registerAction(
+            new BABYLON.ExecuteCodeAction(
+                {
+                    trigger: BABYLON.ActionManager.OnIntersectionEnterTrigger,
+                    parameter: { mesh: itBOX },
+                },
+                (evt) => {
+                    distanceText.remove();
+
+                    // Create a div to hold distance and buttons
+                    const gameResult = document.createElement("div");
+                    gameResult.style.position = "absolute";
+                    gameResult.style.left = "50%";
+                    gameResult.style.top = "40%";
+                    gameResult.style.transform = "translate(-50%, -50%)";
+                    gameResult.style.textAlign = "center";
+                    document.body.appendChild(gameResult);
+                    
+                    // Add distance text to gameResult div
+                    const distanceText1 = document.createElement("p");
+                    distanceText1.textContent =`GAME OVER`;
+                    distanceText1.style.fontFamily = "'Press Start 2P', cursive";
+                    distanceText1.style.color = "rgb(147,138,138)";
+                    distanceText1.style.fontSize = "50px";
+                    gameResult.appendChild(distanceText1);
+
+                    // Add distance text to gameResult div
+                    const distanceText2 = document.createElement("p");
+                    distanceText2.textContent =`Distance parcourue  ${distance.toFixed(0)} mètres`;
+                    distanceText2.style.fontFamily = "'Press Start 2P', cursive";
+                    distanceText2.style.color = "rgb(147,138,138)";
+                    distanceText2.style.fontSize = "40px";
+                    gameResult.appendChild(distanceText2);
+                    
+                    // Add Try Again button to gameResult div
+                    const tryAgain = document.createElement("button");
+                    tryAgain.textContent = "Try Again";
+                    gameResult.appendChild(tryAgain);
+                    tryAgain.style.fontFamily = "'Press Start 2P', cursive";
+                    tryAgain.style.marginRight = "10px";
+                    tryAgain.style.padding = "10px 20px";
+                    tryAgain.style.fontSize = "24px";
+                    tryAgain.style.borderRadius = "10px";
+                    tryAgain.style.background = "#ddd";
+                    tryAgain.style.color = "#000";
+                    tryAgain.style.cursor = "pointer";
+                    tryAgain.addEventListener("click", () => {
+                        gameResult.remove(); // supprime la div gameResult de la page
+                        distance = 0; // réinitialise la distance
+                        groundSpeed = 1; // réinitialise la vitesse
+                        startGame2(); // redémarre le jeu
+                    });           
+                    
+                    // // Add End Game button to gameResult div
+                    // const endGame = document.createElement("button");
+                    // endGame.textContent = "End Game";
+                    // gameResult.appendChild(endGame);
+                    // endGame.style.fontFamily = "'Press Start 2P', cursive";
+                    // endGame.style.marginLeft = "10px";
+                    // endGame.style.padding = "10px 20px";
+                    // endGame.style.fontSize = "24px";
+                    // endGame.style.borderRadius = "10px";
+                    // endGame.style.background = "#ddd";
+                    // endGame.style.color = "#000";
+                    // endGame.style.cursor = "pointer";
+                    // endGame.addEventListener("click", () => {
+                    //     // Supprime la div gameResult de la page
+                    //     gameResult.remove();
+                    //     // Lance la nouvelle scène startGame2
+                    //     startGame2();
+                    // });
+                    
+
+                    // Stop the game
+                    engine.stopRenderLoop();
+                    }
+            )
+        );
+    obstacle.actionManager = actionManager;
+    obstacle.scaling = new BABYLON.Vector3(6, 6, 6);
+  
+    let lane = Math.floor(Math.random() * 3); // randomly choose a lane (0, 1, or 2)
+    let x = -30 + lane * 30; // compute the x position based on the lane
+    obstacle.position = new BABYLON.Vector3(x, 50, -100); // set initial position above the scene
+  
+    obstacle.checkCollisions = true;
+  
+    let material = new BABYLON.StandardMaterial("obstacleMaterial", scene);
+    material.diffuseTexture = new BABYLON.Texture("images/barils.png", scene);
+    material.diffuseTexture.hasAlpha = true; // Vérifie si la texture a une canal alpha (transparence)
+    obstacle.material = material;
+  
+    // animate the obstacle's fall
+    let animation = new BABYLON.Animation("obstacleAnimation", "position.y", 60, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+    let keys = [];
+    keys.push({frame: 0, value: 50}); // starting position
+    keys.push({frame: 60, value: 12}); // ending position
+    animation.setKeys(keys);
+    obstacle.animations.push(animation);
+  
+    // remove obstacle after 10 seconds
+    setTimeout(function() {
+        obstacle.dispose();
+    }, 10000);
+  
+    return obstacle;
 }
 
 function createLights( scene )
 {
   // Create a directional light with a direction pointing towards the setting sun
   let light0 = new BABYLON.DirectionalLight( "dir0", new BABYLON.Vector3( 0.5, -0.5, -0.5 ), scene );
-  light0.intensity = 0.9; // Decrease the intensity to simulate a setting sun
+  light0.intensity = 0.8; // Decrease the intensity to simulate a setting sun
   light0.diffuse = new BABYLON.Color3(1, 0.7, 0.5); // Use a warm color to simulate sunset
 }
 
+function createFreeCamera( scene )
+{
+	let camera = new BABYLON.FreeCamera( "freeCamera", new BABYLON.Vector3( 0, 50, 0 ), scene );
+	camera.attachControl( canvas );
+	// prevent camera to cross ground
+	camera.checkCollisions = true;
+	// avoid flying with the camera
+	camera.applyGravity = true;
 
-function createSkybox(scene) {
-  // Création d'une material
-     var sMaterial = new BABYLON.StandardMaterial("skyboxMaterial", scene);
-     sMaterial.backFaceCulling = false;
-     sMaterial.reflectionTexture = new BABYLON.CubeTexture("textures/TropicalSunnyDay", scene);
-     sMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
+	// Add extra keys for camera movements
+	// Need the ascii code of the extra key(s). We use a string method here to get the ascii code
+	camera.keysUp.push( 'z'.charCodeAt( 0 ) );
+	camera.keysDown.push( 's'.charCodeAt( 0 ) );
+	camera.keysLeft.push( 'q'.charCodeAt( 0 ) );
+	camera.keysRight.push( 'd'.charCodeAt( 0 ) );
+	camera.keysUp.push( 'Z'.charCodeAt( 0 ) );
+	camera.keysDown.push( 'S'.charCodeAt( 0 ) );
+	camera.keysLeft.push( 'Q'.charCodeAt( 0 ) );
+	camera.keysRight.push( 'D'.charCodeAt( 0 ) );
 
-     // Création d'un cube avec la material adaptée
-     var skybox = BABYLON.Mesh.CreateBox("skybox", 10000, scene);
-     skybox.material = sMaterial;
-     skybox.position.z = 400;
-     skybox.position.y = -200;
+	return camera;
 }
 
-function createFreeCamera(scene, initialPosition) {
-  let camera = new BABYLON.FreeCamera("freeCamera", initialPosition, scene);
-  camera.attachControl(canvas);
-  // prevent camera to cross ground
-  camera.checkCollisions = true;
-  // avoid flying with the camera
-  camera.applyGravity = true;
+function createFollowCamera( scene, target )
+{
+	let camera = new BABYLON.FollowCamera( "BikeFollowCamera", target.position, scene, target );
 
-  // Make it small as we're going to put in on top of the Dude
-  camera.ellipsoid = new BABYLON.Vector3(.1, .1, .1); // very small ellipsoid/sphere 
-  camera.ellipsoidOffset.y = 4;
-  // Add extra keys for camera movements
-  // Need the ascii code of the extra key(s). We use a string method here to get the ascii code
-  camera.keysUp.push("z".charCodeAt(0));
-  camera.keysDown.push("s".charCodeAt(0));
-  camera.keysLeft.push("q".charCodeAt(0));
-  camera.keysRight.push("d".charCodeAt(0));
-  camera.keysUp.push("Z".charCodeAt(0));
-  camera.keysDown.push("S".charCodeAt(0));
-  camera.keysLeft.push("Q".charCodeAt(0));
-  camera.keysRight.push("D".charCodeAt(0));
-
-  return camera;
-}
-
-function createFollowCamera(scene, target) {
-  let targetName = target.name;
-
-  // use the target name to name the camera
-  let camera = new BABYLON.FollowCamera(
-    targetName + "FollowCamera",
-    target.position,
-    scene,
-    target
-  );
-
-  // default values
-	camera.radius = 47; // how far from the object to follow
-	camera.heightOffset = 10; // how high above the object to place the camera
+	camera.radius = 70; // how far from the object to follow
+	camera.heightOffset = 20; // how high above the object to place the camera
 	camera.rotationOffset = 180; // the viewing angle
 	camera.cameraAcceleration = 0.1; // how fast to move
 	camera.maxCameraSpeed = 5; // speed limit
 
-  return camera;
+	return camera;
 }
 
 let zMovement = 5;
-function createTank(scene) {
-  let tank = new BABYLON.MeshBuilder.CreateBox(
-    "Tank",
-    { height: 1, depth: 6, width: 6 },
-    scene
-  );
-  let tankMaterial = new BABYLON.StandardMaterial("tankMaterial", scene);
-  tankMaterial.diffuseColor = new BABYLON.Color3.Red();
-  tankMaterial.emissiveColor = new BABYLON.Color3.Blue();
-  tank.material = tankMaterial;
 
-  // tank cannot be picked by rays, but tank will not be pickable by any ray from other
-  // players.... !
-  //tank.isPickable = false;
+async function createBike(scene, itBOX) {
+    return new Promise(resolve => {
+        BABYLON.SceneLoader.ImportMesh("", "./models/", "bike.glb", scene, function(newMeshes) {
+            let Bike = newMeshes[0];
+            Bike.name = "Bike";
+            Bike.position.y = 9;
+            Bike.speed = 0;
+            Bike.frontVector = new BABYLON.Vector3(0, 0, 1);
+            Bike.laneIndex = 0; // start at the leftmost lane
 
-  // By default the box/tank is in 0, 0, 0, let's change that...
-  tank.position.y = 0.6;
-  tank.speed = 1;
-  tank.frontVector = new BABYLON.Vector3(0, 0, 1);
+            // Define the positions of the lanes
+            const lanes = [-30, 0, 30]; // example positions for 3 lanes
+            const laneOffset = 5; // distance between lanes
+            const leftmostLane = lanes[0];
+            const rightmostLane = lanes[lanes.length - 1];
 
-  tank.move = () => {
-    if (scene.activeCamera !== scene.followCameraTank) return;
-    //tank.position.z += -1; // speed should be in unit/s, and depends on
-    // deltaTime !
+            Bike.move = () => {
+                
+                let yMovement = 0;
 
-    // if we want to move while taking into account collision detections
-    // collision uses by default "ellipsoids"
+                if (Bike.position.y > 2) {
+                    zMovement = 0;
+                    yMovement = -2;
+                }
 
-    let yMovement = 0;
+                if (inputStates.right) {
+                    if (Bike.laneIndex > 0) { // check if there's a lane to the right
+                        Bike.laneIndex--;
+                        let toPosition = new BABYLON.Vector3(lanes[Bike.laneIndex], Bike.position.y, Bike.position.z);
+                        BABYLON.Animation.CreateAndStartAnimation("moveRight", Bike, "position", 15, 15, Bike.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                        BABYLON.Animation.CreateAndStartAnimation("moveRight", itBOX, "position", 15, 15, itBOX.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                    }
+                }   
+                if (inputStates.left) {
+                    if (Bike.laneIndex < lanes.length - 1) { // check if there's a lane to the left
+                        Bike.laneIndex++;
+                        let toPosition = new BABYLON.Vector3(lanes[Bike.laneIndex], Bike.position.y, Bike.position.z);
+                        BABYLON.Animation.CreateAndStartAnimation("moveLeft", Bike, "position", 15, 15, Bike.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                        BABYLON.Animation.CreateAndStartAnimation("moveLeft", itBOX, "position", 15, 15, itBOX.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                    }
+                }
+                if (inputStates.down) {
+					if (Bike.laneIndex == 0 || Bike.laneIndex == lanes.length - 1) { // check if there's a lane to the middle
+						Bike.laneIndex = 1;
+						let toPosition = new BABYLON.Vector3(lanes[Bike.laneIndex], Bike.position.y, Bike.position.z);
+						BABYLON.Animation.CreateAndStartAnimation("moveMiddle", Bike, "position", 15, 15, Bike.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                        BABYLON.Animation.CreateAndStartAnimation("moveMiddle", itBOX, "position", 15, 15, itBOX.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
 
-    if (tank.position.y > 2) {
-      zMovement = 0;
-      yMovement = -2;
-    }
+					}
+				}				
 
+                // other movements (left, right, etc.) can be added here
+            };
 
-    // adjusts y position depending on ground height...
-    // create a ray that starts above the dude, and goes down vertically
-    let origin = new BABYLON.Vector3(tank.position.x, 1000, tank.position.z);
-    let direction = new BABYLON.Vector3(0, -1, 0);
-    let ray = new BABYLON.Ray(origin, direction, 10000);
+            Bike.scaling = new BABYLON.Vector3(8, 8, 13);
+            Bike.rotation.y = Math.PI;
+            Bike.name = "Bike";
 
-    // compute intersection point with the ground
-    let pickInfo = scene.pickWithRay(ray, (mesh) => { return (mesh.name === "gdhm"); });
-    let groundHeight = pickInfo.pickedPoint.y;
-    tank.position.y = groundHeight + 1.5;
+            // to be taken into account by collision detection
+            Bike.checkCollisions = true;
 
-    //tank.moveWithCollisions(new BABYLON.Vector3(0, yMovement, zMovement));
-
-    if (scene.inputStates.up) {
-      //tank.moveWithCollisions(new BABYLON.Vector3(0, 0, 1*tank.speed));
-      tank.moveWithCollisions(
-        tank.frontVector.multiplyByFloats(tank.speed, tank.speed, tank.speed)
-      );
-    }
-    if (scene.inputStates.down) {
-      //tank.moveWithCollisions(new BABYLON.Vector3(0, 0, -1*tank.speed));
-      tank.moveWithCollisions(
-        tank.frontVector.multiplyByFloats(-tank.speed, -tank.speed, -tank.speed)
-      );
-    }
-    if (scene.inputStates.left) {
-      //tank.moveWithCollisions(new BABYLON.Vector3(-1*tank.speed, 0, 0));
-      tank.rotation.y -= 0.02;
-      tank.frontVector = new BABYLON.Vector3(
-        Math.sin(tank.rotation.y),
-        0,
-        Math.cos(tank.rotation.y)
-      );
-    }
-    if (scene.inputStates.right) {
-      //tank.moveWithCollisions(new BABYLON.Vector3(1*tank.speed, 0, 0));
-      tank.rotation.y += 0.02;
-      tank.frontVector = new BABYLON.Vector3(
-        Math.sin(tank.rotation.y),
-        0,
-        Math.cos(tank.rotation.y)
-      );
-    }
-  };
-  return tank;
+            resolve(Bike);
+        });
+    });
 }
 
-window.addEventListener("resize", () => {
-  engine.resize();
-});
 
 function modifySettings() {
-  // as soon as we click on the game window, the mouse pointer is "locked"
-  // you will have to press ESC to unlock it
-  scene.onPointerDown = () => {
-    if (!scene.alreadyLocked) {
-      console.log("requesting pointer lock");
-      canvas.requestPointerLock();
-    } else {
-      console.log("Pointer already locked");
+    // as soon as we click on the game window, the mouse pointer is "locked"
+    // you will have to press ESC to unlock it
+    scene.onPointerDown = () => {
+        if(!scene.alreadyLocked) {
+            console.log("requesting pointer lock");
+            canvas.requestPointerLock();
+        } else {
+            console.log("Pointer already locked");
+        }
     }
-  };
 
-  document.addEventListener("pointerlockchange", () => {
-    let element = document.pointerLockElement || null;
-    if (element) {
-      // lets create a custom attribute
-      scene.alreadyLocked = true;
-    } else {
-      scene.alreadyLocked = false;
-    }
-  });
+    document.addEventListener("pointerlockchange", () => {
+        let element = document.pointerLockElement || null;
+        if(element) {
+            // lets create a custom attribute
+            scene.alreadyLocked = true;
+        } else {
+            scene.alreadyLocked = false;
+        }
+    })
 
-  // key listeners for the tank
-  scene.inputStates = {};
-  scene.inputStates.left = false;
-  scene.inputStates.right = false;
-  scene.inputStates.up = false;
-  scene.inputStates.down = false;
-  scene.inputStates.space = false;
-  scene.inputStates.laser = false;
+    // key listeners for the Perso
+    inputStates.left = false;
+    inputStates.right = false;
+    inputStates.up = false;
+    inputStates.down = false;
+    inputStates.space = false;
+    
+    //add the listener to the main, window object, and update the states
+    window.addEventListener('keydown', (event) => {
+        if ((event.key === "ArrowLeft") || (event.key === "q")|| (event.key === "Q")) {
+           inputStates.left = true;
+        } else if ((event.key === "ArrowUp") || (event.key === "z")|| (event.key === "Z")){
+           inputStates.up = true;
+        } else if ((event.key === "ArrowRight") || (event.key === "d")|| (event.key === "D")){
+           inputStates.right = true;
+        } else if ((event.key === "ArrowDown")|| (event.key === "s")|| (event.key === "S")) {
+           inputStates.down = true;
+        }  else if (event.key === " ") {
+           inputStates.space = true;
+        }
+    }, false);
 
-  //add the listener to the main, window object, and update the states
-  window.addEventListener(
-    "keydown",
-    (event) => {
-      if (event.key === "ArrowLeft" || event.key === "q" || event.key === "Q") {
-        scene.inputStates.left = true;
-      } else if (
-        event.key === "ArrowUp" ||
-        event.key === "z" ||
-        event.key === "Z"
-      ) {
-        scene.inputStates.up = true;
-      } else if (
-        event.key === "ArrowRight" ||
-        event.key === "d" ||
-        event.key === "D"
-      ) {
-        scene.inputStates.right = true;
-      } else if (
-        event.key === "ArrowDown" ||
-        event.key === "s" ||
-        event.key === "S"
-      ) {
-        scene.inputStates.down = true;
-      } else if (event.key === " ") {
-        scene.inputStates.space = true;
-      } else if (event.key === "l" || event.key === "L") {
-        scene.inputStates.laser = true;
-      } else if (event.key == "t" || event.key == "T") {
-        scene.activeCamera = scene.followCameraTank;
-      } else if (event.key == "y" || event.key == "Y") {
-        scene.activeCamera = scene.followCameraDude;
-      } else if (event.key == "u" || event.key == "U") {
-        scene.activeCamera = scene.freeCameraDude;
-      }
-    },
-    false
-  );
-
-  //if the key will be released, change the states object
-  window.addEventListener(
-    "keyup",
-    (event) => {
-      if (event.key === "ArrowLeft" || event.key === "q" || event.key === "Q") {
-        scene.inputStates.left = false;
-      } else if (
-        event.key === "ArrowUp" ||
-        event.key === "z" ||
-        event.key === "Z"
-      ) {
-        scene.inputStates.up = false;
-      } else if (
-        event.key === "ArrowRight" ||
-        event.key === "d" ||
-        event.key === "D"
-      ) {
-        scene.inputStates.right = false;
-      } else if (
-        event.key === "ArrowDown" ||
-        event.key === "s" ||
-        event.key === "S"
-      ) {
-        scene.inputStates.down = false;
-      } else if (event.key === " ") {
-        scene.inputStates.space = false;
-      } else if (event.key === "l" || event.key === "L") {
-        scene.inputStates.laser = false;
-      }
-    },
-    false
-  );
+    //if the key will be released, change the states object 
+    window.addEventListener('keyup', (event) => {
+        if ((event.key === "ArrowLeft") || (event.key === "q")|| (event.key === "Q")) {
+           inputStates.left = false;
+        } else if ((event.key === "ArrowUp") || (event.key === "z")|| (event.key === "Z")){
+           inputStates.up = false;
+        } else if ((event.key === "ArrowRight") || (event.key === "d")|| (event.key === "D")){
+           inputStates.right = false;
+        } else if ((event.key === "ArrowDown")|| (event.key === "s")|| (event.key === "S")) {
+           inputStates.down = false;
+        }  else if (event.key === " ") {
+           inputStates.space = false;
+        }
+    }, false);
 }
