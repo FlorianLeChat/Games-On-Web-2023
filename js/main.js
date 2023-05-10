@@ -99,7 +99,7 @@ async function createScene() {
         obstacle1.position.x = x1; // set initial position in the lane
     
         // start obstacle1 animation
-        scene.beginAnimation(obstacle1, 0, 60, false);
+        scene.beginAnimation(obstacle1, 0, 40, false);
     
         // remove obstacle1 after 10 seconds
         setTimeout(function() {
@@ -118,19 +118,19 @@ async function createScene() {
         obstacle2.position.x = x2; // set initial position in the lane
     
         // start obstacle2 animation
-        scene.beginAnimation(obstacle2, 0, 60, false);
+        scene.beginAnimation(obstacle2, 0, 40, false);
     
         // remove obstacle2 after 10 seconds
         setTimeout(function() {
             obstacle2.dispose();
-        }, 10000);
+        }, 6000);
     }    
     
     // Wait for 15 seconds before adding obstacles
     setTimeout(() => {
         addObstacle();
-        setInterval(addObstacle, 6000);
-    }, 1000);
+        setInterval(addObstacle, 3000);
+    }, 4000);
 
     return scene;
   }
@@ -286,6 +286,7 @@ function createObstacle(scene, itBOX) {
                     tryAgain.addEventListener("click", () => {
                         gameResult.remove(); // supprime la div gameResult de la page
                         distance = 0; // réinitialise la distance
+                        groundSpeed = 1; // réinitialise la vitesse
                         startGame(); // redémarre le jeu
                     });           
                     
@@ -350,7 +351,6 @@ function createLights( scene )
   light0.intensity = 0.8; // Decrease the intensity to simulate a setting sun
   light0.diffuse = new BABYLON.Color3(1, 0.7, 0.5); // Use a warm color to simulate sunset
 }
-
 
 function createFreeCamera( scene )
 {

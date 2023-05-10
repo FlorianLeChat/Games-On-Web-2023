@@ -1,4 +1,4 @@
-import Dude from "./Dude.js";
+//import Dude from "./Dude.js";
 
 let canvas;
 let engine;
@@ -12,21 +12,14 @@ export function startGame2() {
   // enable physics
   scene.enablePhysics();
 
-  // modify some default settings (i.e pointer events to prevent cursor to go
-  // out of the game window)
   modifySettings();
 
-  let tank = scene.getMeshByName("heroTank");
+  let tank = scene.getMeshByName("Tank");
 
   scene.toRender = () => {
-    let deltaTime = engine.getDeltaTime(); // remind you something ?
+    let deltaTime = engine.getDeltaTime();
 
     tank.move();
-    tank.fireCannonBalls(); // will fire only if space is pressed !
-    tank.fireLasers(); // will fire only if l is pressed !
-
-    moveHeroDude();
-    moveOtherDudes();
 
     scene.render();
   };
@@ -44,6 +37,8 @@ function createScene() {
 
   let ground = createGround(scene);
   //let freeCamera = createFreeCamera(scene);
+ 
+  let skybox = createSkybox(scene);
 
   let tank = createTank(scene);
 
@@ -52,8 +47,6 @@ function createScene() {
   scene.activeCamera = scene.followCameraTank;
 
   createLights(scene);
-
-  createHeroDude(scene); // we added the creation of a follow camera for the dude
 
   loadSounds(scene);
 
@@ -105,17 +98,6 @@ function loadSounds(scene) {
     );
   };
 
-  binaryTask = assetsManager.addBinaryFileTask("cannonSound", "sounds/cannonBlast.mp3");
-  binaryTask.onSuccess = function (task) {
-    scene.assets.cannonSound = new BABYLON.Sound(
-      "cannon",
-      task.data,
-      scene,
-      null,
-      { loop: false, spatialSound: true }
-    );
-  };
-
   binaryTask = assetsManager.addBinaryFileTask("dieSound", "sounds/dying.wav");
   binaryTask.onSuccess = function (task) {
     scene.assets.dieSound = new BABYLON.Sound("die", task.data, scene, null, {
@@ -157,29 +139,13 @@ function loadSounds(scene) {
   };
 }
 
-function loadCrossHair(scene) {
-  var crossHair = new BABYLON.Mesh.CreateBox("crossHair", .1, scene);
-  crossHair.parent = scene.freeCameraDude;
-  //console.log("minZ is " + scene.freeCameraDude.minZ);
-  //  scene.freeCameraDude.minZ = .1;
-  //  crossHair.position.z += 0.2;
-  crossHair.position.z += 2;
-
-  // strange....?
-  //impact.position.y -= scene.freeCameraDude.ellipsoidOffset.y;
-  crossHair.material = new BABYLON.StandardMaterial("crossHair", scene);
-  crossHair.material.diffuseTexture = new BABYLON.Texture("images/gunaims.png", scene);
-  crossHair.material.diffuseTexture.hasAlpha = true;
-  crossHair.isPickable = false;
-}
-
 function createGround(scene) {
   const groundOptions = {
     width: 2000,
-    height: 2000,
-    subdivisions: 20,
-    minHeight: 0,
-    maxHeight: 100,
+    height: 20000,
+    subdivisions: 50,
+    minHeight: -50,
+    maxHeight: 50,
     onReady: onGroundCreated,
   };
   //scene is optional and defaults to the current scene
@@ -195,12 +161,13 @@ function createGround(scene) {
       "groundMaterial",
       scene
     );
-    groundMaterial.diffuseTexture = new BABYLON.Texture("images/grass.jpg");
+    groundMaterial.diffuseTexture = new BABYLON.Texture("images/grass2.jpeg");
     ground.material = groundMaterial;
     // to be taken into account by collision detection
     ground.checkCollisions = true;
     //groundMaterial.wireframe=true;
-
+    groundMaterial.diffuseTexture.uScale = 100;
+    groundMaterial.diffuseTexture.vScale = 1000;
     // for physic engine
     ground.physicsImpostor = new BABYLON.PhysicsImpostor(
       ground,
@@ -212,13 +179,27 @@ function createGround(scene) {
   return ground;
 }
 
-function createLights(scene) {
-  // i.e sun light with all light rays parallels, the vector is the direction.
-  let light0 = new BABYLON.DirectionalLight(
-    "dir0",
-    new BABYLON.Vector3(-1, -1, 0),
-    scene
-  );
+function createLights( scene )
+{
+  // Create a directional light with a direction pointing towards the setting sun
+  let light0 = new BABYLON.DirectionalLight( "dir0", new BABYLON.Vector3( 0.5, -0.5, -0.5 ), scene );
+  light0.intensity = 0.9; // Decrease the intensity to simulate a setting sun
+  light0.diffuse = new BABYLON.Color3(1, 0.7, 0.5); // Use a warm color to simulate sunset
+}
+
+
+function createSkybox(scene) {
+  // Création d'une material
+     var sMaterial = new BABYLON.StandardMaterial("skyboxMaterial", scene);
+     sMaterial.backFaceCulling = false;
+     sMaterial.reflectionTexture = new BABYLON.CubeTexture("textures/TropicalSunnyDay", scene);
+     sMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
+
+     // Création d'un cube avec la material adaptée
+     var skybox = BABYLON.Mesh.CreateBox("skybox", 10000, scene);
+     skybox.material = sMaterial;
+     skybox.position.z = 400;
+     skybox.position.y = -200;
 }
 
 function createFreeCamera(scene, initialPosition) {
@@ -258,21 +239,11 @@ function createFollowCamera(scene, target) {
   );
 
   // default values
-  camera.radius = 40; // how far from the object to follow
-  camera.heightOffset = 14; // how high above the object to place the camera
-  camera.rotationOffset = 0; // the viewing angle
-  camera.cameraAcceleration = 0.1; // how fast to move
-  camera.maxCameraSpeed = 5; // speed limit
-
-  // specific values
-  switch (target.name) {
-    case "heroDude":
-      camera.rotationOffset = 0;
-      break;
-    case "heroTank":
-      camera.rotationOffset = 180; // the viewing angle
-      break;
-  }
+	camera.radius = 47; // how far from the object to follow
+	camera.heightOffset = 10; // how high above the object to place the camera
+	camera.rotationOffset = 180; // the viewing angle
+	camera.cameraAcceleration = 0.1; // how fast to move
+	camera.maxCameraSpeed = 5; // speed limit
 
   return camera;
 }
@@ -280,7 +251,7 @@ function createFollowCamera(scene, target) {
 let zMovement = 5;
 function createTank(scene) {
   let tank = new BABYLON.MeshBuilder.CreateBox(
-    "heroTank",
+    "Tank",
     { height: 1, depth: 6, width: 6 },
     scene
   );
@@ -358,302 +329,7 @@ function createTank(scene) {
       );
     }
   };
-
-  // to avoid firing too many cannonball rapidly
-  tank.canFireCannonBalls = true;
-  tank.fireCannonBallsAfter = 0.1; // in seconds
-
-  tank.fireCannonBalls = function () {
-    if (!scene.inputStates.space) return;
-
-    if (!this.canFireCannonBalls) return;
-
-    // ok, we fire, let's put the above property to false
-    this.canFireCannonBalls = false;
-
-    // let's be able to fire again after a while
-    setTimeout(() => {
-      this.canFireCannonBalls = true;
-    }, 1000 * this.fireCannonBallsAfter);
-
-    scene.assets.cannonSound.setPosition(tank.position);
-    scene.assets.cannonSound.setVolume(0.7);
-    scene.assets.cannonSound.play();
-
-    // Create a canonball
-    let cannonball = BABYLON.MeshBuilder.CreateSphere(
-      "cannonball",
-      { diameter: 2, segments: 32 },
-      scene
-    );
-    cannonball.material = new BABYLON.StandardMaterial("Fire", scene);
-    cannonball.material.diffuseTexture = new BABYLON.Texture(
-      "images/Fire.jpg",
-      scene
-    );
-
-    let pos = this.position;
-    // position the cannonball above the tank
-    cannonball.position = new BABYLON.Vector3(pos.x, pos.y + 1, pos.z);
-    // move cannonBall position from above the center of the tank to above a bit further than the frontVector end (5 meter s further)
-    cannonball.position.addInPlace(this.frontVector.multiplyByFloats(5, 5, 5));
-
-    // add physics to the cannonball, mass must be non null to see gravity apply
-    cannonball.physicsImpostor = new BABYLON.PhysicsImpostor(
-      cannonball,
-      BABYLON.PhysicsImpostor.SphereImpostor,
-      { mass: 1 },
-      scene
-    );
-
-    // the cannonball needs to be fired, so we need an impulse !
-    // we apply it to the center of the sphere
-    let powerOfFire = 100;
-    let azimuth = 0.1;
-    let aimForceVector = new BABYLON.Vector3(
-      this.frontVector.x * powerOfFire,
-      (this.frontVector.y + azimuth) * powerOfFire,
-      this.frontVector.z * powerOfFire
-    );
-
-    cannonball.physicsImpostor.applyImpulse(aimForceVector, cannonball.getAbsolutePosition());
-
-    cannonball.actionManager = new BABYLON.ActionManager(scene);
-    // register an action for when the cannonball intesects a dude, so we need to iterate on each dude
-    scene.dudes.forEach((dude) => {
-      cannonball.actionManager.registerAction(
-        new BABYLON.ExecuteCodeAction(
-          {
-            trigger: BABYLON.ActionManager.OnIntersectionEnterTrigger,
-            parameter: dude.Dude.bounder,
-          }, // dude is the mesh, Dude is the instance if Dude class that has a bbox as a property named bounder.
-          // see Dude class, line 16 ! dudeMesh.Dude = this;
-          () => {
-            // console.log(dude.Dude.bounder)
-            if (dude.Dude.bounder._isDisposed) return;
-
-            //console.log("HIT !")
-            //dude.Dude.bounder.dispose();
-            //dude.dispose();
-            dude.Dude.gotKilled();
-            //cannonball.dispose(); // don't work properly why ? Need for a closure ?
-          }
-        )
-      );
-    });
-
-    // Make the cannonball disappear after 3s
-    setTimeout(() => {
-      cannonball.dispose();
-    }, 3000);
-  };
-
-  // to avoid firing too many cannonball rapidly
-  tank.canFireLasers = true;
-  tank.fireLasersAfter = 0.3; // in seconds
-
-  tank.fireLasers = function () {
-    // is the l key pressed ?
-    if (!scene.inputStates.laser) return;
-
-    if (!this.canFireLasers) return;
-
-    // ok, we fire, let's put the above property to false
-    this.canFireLasers = false;
-
-    // let's be able to fire again after a while
-    setTimeout(() => {
-      this.canFireLasers = true;
-    }, 1000 * this.fireLasersAfter);
-
-    scene.assets.laserSound.setPosition(tank.position);
-    scene.assets.laserSound.setVolume(0.6);
-    scene.assets.laserSound.play();
-
-    //console.log("create ray")
-    // create a ray
-    let origin = this.position; // position of the tank
-    //let origin = this.position.add(this.frontVector);
-
-    // Looks a little up (0.1 in y)
-    let direction = new BABYLON.Vector3(
-      this.frontVector.x,
-      this.frontVector.y + 0.1,
-      this.frontVector.z
-    );
-    let length = 1000;
-    let ray = new BABYLON.Ray(origin, direction, length);
-
-    // to make the ray visible :
-    let rayHelper = new BABYLON.RayHelper(ray);
-    rayHelper.show(scene, new BABYLON.Color3.Red());
-
-    // to make ray disappear after 200ms
-    setTimeout(() => {
-      rayHelper.hide(ray);
-    }, 200);
-
-    // what did the ray touched?
-    /*
-        let pickInfo = scene.pickWithRay(ray);
-        // see what has been "picked" by the ray
-        console.log(pickInfo);
-        */
-
-    // See also multiPickWithRay if you want to kill "through" multiple objects
-    // this would return an array of boundingBoxes.... instead of one.
-
-    let pickInfo = scene.pickWithRay(ray, (mesh) => {
-      /*
-            if((mesh.name === "heroTank")|| ((mesh.name === "ray"))) return false;
-            return true;
-            */
-      return mesh.name.startsWith("bounder");
-    });
-
-    if (pickInfo.pickedMesh) {
-      // sometimes it's null for whatever reason...?
-      // the mesh is a bounding box of a dude
-      console.log(pickInfo.pickedMesh.name);
-      let bounder = pickInfo.pickedMesh;
-      let dude = bounder.dudeMesh.Dude;
-      // let's decrease the dude health, pass him the hit point
-      dude.decreaseHealth(pickInfo.pickedPoint);
-
-      //bounder.dudeMesh.dispose();
-      //bounder.dispose();
-    }
-  };
-
   return tank;
-}
-
-function createHeroDude(scene) {
-  // load the Dude 3D animated model
-  // name, folder, skeleton name
-  //BABYLON.SceneLoader.ImportMesh("him", "models/Dude/", "Dude.babylon", scene, onDudeImported);
-
-  let meshTask = scene.assetsManager.addMeshTask(
-    "Dude task",
-    "him",
-    "models/Dude/",
-    "Dude.babylon"
-  );
-
-  meshTask.onSuccess = function (task) {
-    onDudeImported(
-      task.loadedMeshes,
-      task.loadedParticleSystems,
-      task.loadedSkeletons
-    );
-  };
-
-  function onDudeImported(newMeshes, particleSystems, skeletons) {
-    let heroDude = newMeshes[0];
-    heroDude.position = new BABYLON.Vector3(0, 0, 5); // The original dude
-    // make it smaller
-    //heroDude.speed = 0.1;
-
-    // give it a name so that we can query the scene to get it by name
-    heroDude.name = "heroDude";
-
-
-    // there might be more than one skeleton in an imported animated model. Try console.log(skeletons.length)
-    // here we've got only 1.
-    // animation parameters are skeleton, starting frame, ending frame,  a boolean that indicate if we're gonna
-    // loop the animation, speed,
-    // let's store the animatableObject into the main dude mesh
-    heroDude.animation = scene.beginAnimation(skeletons[0], 0, 120, true, 1);
-
-    setTimeout(() => {
-      heroDude.animation.pause();
-    }, 500)
-    // params = id, speed, scaling, scene
-    let hero = new Dude(heroDude, -1, 1, 0.2, scene);
-
-
-    // create a follow camera for this mesh
-    scene.followCameraDude = createFollowCamera(scene, heroDude);
-
-    // Let's add a free camera on the head of the dude (on top of the bounding box + 0.2)
-    let bboxHeightScaled = hero.getBoundingBoxHeightScaled();
-    let freeCamPosition = new BABYLON.Vector3(heroDude.position.x,
-      heroDude.position.y + bboxHeightScaled + 0.2,
-      heroDude.position.z);
-    scene.freeCameraDude = createFreeCamera(scene, freeCamPosition);
-    // associate a crosshair to this cam, to see where we are aiming
-    loadCrossHair(scene);
-
-    // make clones
-    scene.dudes = [];
-    for (let i = 0; i < 10; i++) {
-      scene.dudes[i] = doClone(heroDude, skeletons, i);
-      scene.beginAnimation(scene.dudes[i].skeleton, 0, 120, true, 1);
-
-      // Create instance with move method etc.
-      // params = speed, scaling, scene
-      var temp = new Dude(scene.dudes[i], i, 0.3, 0.2, scene);
-      // remember that the instances are attached to the meshes
-      // and the meshes have a property "Dude" that IS the instance
-      // see render loop then....
-    }
-    // insert at pos 0, see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array
-    // it will be easier for us to distinguish it later on...
-    scene.dudes.unshift(heroDude);
-  }
-}
-
-function doClone(originalMesh, skeletons, id) {
-  let myClone;
-  let xrand = Math.floor(Math.random() * 500 - 250);
-  let zrand = Math.floor(Math.random() * 500 - 250);
-
-  myClone = originalMesh.clone("clone_" + id);
-  myClone.position = new BABYLON.Vector3(xrand, 0, zrand);
-
-  if (!skeletons) return myClone;
-
-  // The mesh has at least one skeleton
-  if (!originalMesh.getChildren()) {
-    myClone.skeleton = skeletons[0].clone("clone_" + id + "_skeleton");
-    return myClone;
-  } else {
-    if (skeletons.length === 1) {
-      // the skeleton controls/animates all children, like in the Dude model
-      let clonedSkeleton = skeletons[0].clone("clone_" + id + "_skeleton");
-      myClone.skeleton = clonedSkeleton;
-      let nbChildren = myClone.getChildren().length;
-
-      for (let i = 0; i < nbChildren; i++) {
-        myClone.getChildren()[i].skeleton = clonedSkeleton;
-      }
-      return myClone;
-    } else if (skeletons.length === originalMesh.getChildren().length) {
-      // each child has its own skeleton
-      for (let i = 0; i < myClone.getChildren().length; i++) {
-        myClone.getChildren()[i].skeleton = skeletons[i].clone(
-          "clone_" + id + "_skeleton_" + i
-        );
-      }
-      return myClone;
-    }
-  }
-
-  return myClone;
-}
-
-function moveHeroDude() {
-  let heroDude = scene.getMeshByName("heroDude");
-  if (heroDude) heroDude.Dude.moveFPS(scene);
-}
-
-function moveOtherDudes() {
-  if (scene.dudes) {
-    // start at 1 so the original dude will not move and follow the tank...
-    for (var i = 1; i < scene.dudes.length; i++) {
-      scene.dudes[i].Dude.followTank(scene);
-    }
-  }
 }
 
 window.addEventListener("resize", () => {
@@ -669,12 +345,6 @@ function modifySettings() {
       canvas.requestPointerLock();
     } else {
       console.log("Pointer already locked");
-      
-      if(scene.activeCamera === scene.freeCameraDude) {
-        // let fire the gun
-        let heroDude = scene.getMeshByName("heroDude");
-        if (heroDude) heroDude.Dude.fireGun();
-      }
     }
   };
 
