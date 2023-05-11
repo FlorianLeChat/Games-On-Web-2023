@@ -2,7 +2,7 @@ let canvas;
 let engine;
 let scene;
 let inputStates = {};
-let groundSpeed = 1;
+let groundSpeed = 5;
 let distanceText;
 let distance = 0;
 import { startGame2 } from "./main2.js";

@@ -2,23 +2,24 @@ let canvas;
 let engine;
 let scene;
 let inputStates = {};
-let groundSpeed = 1;
+let groundSpeed = 5;
 let distanceText;
 let distance = 0;
 
 export async function startGame2() {
-  canvas = document.querySelector("#myCanvas");
+    canvas = document.querySelector("#myCanvas");
     engine = new BABYLON.Engine(canvas, true);
     scene = await createScene();
-
+  
     modifySettings();
-
+  
     let Bike = scene.getMeshByName("Bike");
-
+    const finishLine = createFinishLine(scene);
+  
     distanceText = document.createElement("div");
     distanceText.id = "distanceText";
     document.body.appendChild(distanceText);
-
+  
     // Set the style of the distanceText element
     const style = distanceText.style;
     style.position = "absolute";
@@ -27,30 +28,46 @@ export async function startGame2() {
     style.color = "white";
     style.fontSize = "24px";
     style.fontFamily = "'Press Start 2P', cursive";
-
-
+  
     engine.runRenderLoop(async () => {
-        let deltaTime = engine.getDeltaTime();
-
-        Bike.move();
-          
-          scene.meshes.forEach((mesh) => {
-            if (mesh.name == "ground" || mesh.name == "obstacle" || mesh.name == "leftSideGround" || mesh.name == "rightSideGround" || mesh.name == "palm" || mesh.name == "palmtree") {
-              mesh.position.z += groundSpeed;
-            }
-          });
-          
-
-        groundSpeed += 0.0005;
-       
-        // Update distance
-        distance += groundSpeed * deltaTime / 1000;
-        const distanceText = document.querySelector("#distanceText");
-        distanceText.textContent = `Distance : ${distance.toFixed(0)} mètres`;
-
-        scene.render();
+      let deltaTime = engine.getDeltaTime();
+  
+      Bike.move();
+  
+      scene.meshes.forEach((mesh) => {
+        if (mesh.name == "ground" || mesh.name == "obstacle" || mesh.name == "leftSideGround" || mesh.name == "rightSideGround" || mesh.name == "finishLine" || mesh.name == "palmtree") {
+          mesh.position.z += groundSpeed;
+        }
+      });
+  
+      groundSpeed += 0.0005;
+  
+      // Update distance
+      distance += groundSpeed * deltaTime / 1000;
+      const distanceText = document.querySelector("#distanceText");
+      distanceText.textContent = `Distance : ${distance.toFixed(0)} mètres`;
+  
+      if (Bike.position.z < finishLine.position.z) {
+        // Game over logic here
+        Bike.speed = 0; // Stop the bike
+        engine.stopRenderLoop(); // Stop the game loop
+  
+        // Add distance text to gameResult div  
+        const gameResult = document.querySelector("#gameResult");
+        const finishText = document.createElement("p");
+        finishText.textContent = "YOU WIN!";
+        finishText.style.fontFamily = "'Press Start 2P', cursive";
+        finishText.style.color = "rgb(147,138,138)";
+        finishText.style.fontSize = "50px";
+        gameResult.appendChild(finishText);
+  
+        showGameOverMenu(); // Show a game over menu, you need to create this function and the related menu
+      }
+  
+      scene.render();
     });
-}
+  }
+  
 
 async function createScene() {
     let scene = new BABYLON.Scene( engine );
@@ -143,7 +160,7 @@ async function createScene() {
 function createGround(scene) {
     const groundOptions = {
         width: 100,
-        height: 21000,
+        height: 20300,
         subdivisions: 20,
         minHeight: 0,
         maxHeight: 0,
@@ -161,7 +178,19 @@ function createGround(scene) {
     }
     return ground;
 }
+function createFinishLine(scene) {
+    const finishLine = BABYLON.MeshBuilder.CreateBox("finishLine", { height: 20, width: 100, depth: 1 }, scene);
+    finishLine.position.y = 10;
+    finishLine.position.z = -10000; // Change this value to set the finish line distance
 
+    const finishLineMaterial = new BABYLON.StandardMaterial("finishLineMaterial", scene);
+    finishLineMaterial.diffuseTexture = new BABYLON.Texture("images/grass.jpeg", scene);
+    finishLineMaterial.diffuseTexture.hasAlpha = true;
+    finishLine.material = finishLineMaterial;
+    finishLine.visibility = false;
+
+    return finishLine;
+}
 function createSideGrounds(scene) {
   const sideGroundOptions = {
     width: 2000,
@@ -327,10 +356,30 @@ function createObstacle(scene, itBOX) {
   
     obstacle.checkCollisions = true;
   
-    let material = new BABYLON.StandardMaterial("obstacleMaterial", scene);
-    material.diffuseTexture = new BABYLON.Texture("images/rock.png", scene);
-    material.diffuseTexture.hasAlpha = true; // Vérifie si la texture a une canal alpha (transparence)
-    obstacle.material = material;
+    const obstacleFrontMaterial = new BABYLON.StandardMaterial("obstacleFrontMaterial", scene);
+    obstacleFrontMaterial.diffuseTexture = new BABYLON.Texture("images/rock.png", scene);
+
+    const transparentMaterial = createTransparentTexture(scene);
+
+    const obstacleMultiMaterial = new BABYLON.MultiMaterial("obstacleMultiMaterial", scene);
+    obstacleMultiMaterial.subMaterials.push(transparentMaterial); // Back face
+    obstacleMultiMaterial.subMaterials.push(transparentMaterial); // Right face
+    obstacleMultiMaterial.subMaterials.push(transparentMaterial); // Left face
+    obstacleMultiMaterial.subMaterials.push(transparentMaterial); // Top face
+    obstacleMultiMaterial.subMaterials.push(transparentMaterial); // Bottom face
+    obstacleMultiMaterial.subMaterials.push(obstacleFrontMaterial); // Front face
+
+    obstacle.subMeshes = [];
+    const verticesCount = obstacle.getTotalVertices();
+    obstacle.subMeshes.push(new BABYLON.SubMesh(0, 0, verticesCount, 0, 8, obstacle));
+    obstacle.subMeshes.push(new BABYLON.SubMesh(1, 0, verticesCount, 0, 8, obstacle));
+    obstacle.subMeshes.push(new BABYLON.SubMesh(2, 0, verticesCount, 0, 8, obstacle));
+    obstacle.subMeshes.push(new BABYLON.SubMesh(3, 0, verticesCount, 0, 8, obstacle));
+    obstacle.subMeshes.push(new BABYLON.SubMesh(4, 0, verticesCount, 0, 8, obstacle));
+    obstacle.subMeshes.push(new BABYLON.SubMesh(5, 0, verticesCount, 0, 8, obstacle));
+
+    obstacle.material = obstacleMultiMaterial;
+    obstacle.checkCollisions = true;
   
     // animate the obstacle's fall
     let animation = new BABYLON.Animation("obstacleAnimation", "position.y", 60, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
@@ -346,6 +395,13 @@ function createObstacle(scene, itBOX) {
     }, 10000);
   
     return obstacle;
+}
+
+function createTransparentTexture(scene) {
+    const transparentMaterial = new BABYLON.StandardMaterial("transparentMaterial", scene);
+    const transparentTexture = new BABYLON.Texture("images/transparentTexture.png", scene);
+    transparentMaterial.diffuseTexture = transparentTexture;
+    return transparentMaterial;
 }
 
 function createLights( scene )
