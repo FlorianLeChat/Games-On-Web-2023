@@ -71,7 +71,8 @@ async function startGame() {
 }
 
 async function createScene() {
-    let scene = new BABYLON.Scene( engine );
+    let scene = new BABYLON.Scene(engine);
+    let assetsManager = new BABYLON.AssetsManager(scene); // Créez un nouvel objet assetsManager
     let ground = createGround( scene );
     let sidegrounds = createSideGrounds( scene );
 
@@ -89,7 +90,25 @@ async function createScene() {
   
     createLights( scene );
     
-    // Add obstacles
+    // Ajoutez la tâche de chargement de fichier binaire à l'assetsManager
+    let binaryTask = assetsManager.addBinaryFileTask("mood", "sounds/mood.wav");
+    binaryTask.onSuccess = function (task) {
+        if (!scene.assets) {
+            scene.assets = {}; // Créez la propriété assets si elle n'existe pas déjà
+        }
+        scene.assets.moodMusic = new BABYLON.Sound(
+            "mood",
+            task.data,
+            scene,
+            null,
+            {
+                loop: true,
+                autoplay: true,
+            }
+        );
+    };
+    
+  // Add obstacles
     function addObstacle() {
         // create first obstacle
         let obstacle1 = createObstacle(scene, itBOX);
@@ -101,10 +120,10 @@ async function createScene() {
         // start obstacle1 animation
         scene.beginAnimation(obstacle1, 0, 40, false);
     
-        // remove obstacle1 after 10 seconds
+        // remove obstacle1 after 8 seconds
         setTimeout(function() {
             obstacle1.dispose();
-        }, 10000);
+        }, 8000);
     
         // create second obstacle
         let obstacle2 = createObstacle(scene, itBOX);
@@ -120,17 +139,19 @@ async function createScene() {
         // start obstacle2 animation
         scene.beginAnimation(obstacle2, 0, 40, false);
     
-        // remove obstacle2 after 10 seconds
+        // remove obstacle2 after 7 seconds
         setTimeout(function() {
             obstacle2.dispose();
-        }, 6000);
+        }, 7000);
     }    
     
-    // Wait for 15 seconds before adding obstacles
+    // Wait for 8 seconds before adding obstacles
     setTimeout(() => {
         addObstacle();
-        setInterval(addObstacle, 3000);
-    }, 4000);
+        setInterval(addObstacle, 4000);
+    }, 8000);
+
+    await assetsManager.loadAsync(); // Attendez le chargement de tous les actifs
 
     return scene;
   }
@@ -321,7 +342,12 @@ function createObstacle(scene, itBOX) {
                         // Lance la nouvelle scène startGame2
                         startGame2();
                     });
-                    collisionSound.play();
+                    collisionSound.play(); // Joue le son de collision
+            
+                    // Arrête la lecture du son de fond
+                    if (scene.assets && scene.assets.moodMusic) {
+                        scene.assets.moodMusic.stop();
+                    }
 
                     // Stop the game
                     engine.stopRenderLoop();
@@ -329,7 +355,7 @@ function createObstacle(scene, itBOX) {
             )
         );
     obstacle.actionManager = actionManager;
-    obstacle.scaling = new BABYLON.Vector3(6, 6, 6);
+    obstacle.scaling = new BABYLON.Vector3(10, 10, 10);
   
     let lane = Math.floor(Math.random() * 3); // randomly choose a lane (0, 1, or 2)
     let x = -30 + lane * 30; // compute the x position based on the lane
@@ -350,7 +376,7 @@ function createObstacle(scene, itBOX) {
     let animation = new BABYLON.Animation("obstacleAnimation", "position.y", 60, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
     let keys = [];
     keys.push({frame: 0, value: 50}); // starting position
-    keys.push({frame: 60, value: 4}); // ending position
+    keys.push({frame: 60, value: 5}); // ending position
     animation.setKeys(keys);
     obstacle.animations.push(animation);
   
@@ -437,24 +463,24 @@ async function createCar(scene, itBOX) {
                     if (Car.laneIndex > 0) { // check if there's a lane to the right
                         Car.laneIndex--;
                         let toPosition = new BABYLON.Vector3(lanes[Car.laneIndex], Car.position.y, Car.position.z);
-                        BABYLON.Animation.CreateAndStartAnimation("moveRight", Car, "position", 30, 15, Car.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
-                        BABYLON.Animation.CreateAndStartAnimation("moveRight", itBOX, "position", 30, 15, itBOX.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                        BABYLON.Animation.CreateAndStartAnimation("moveRight", Car, "position", 20, 15, Car.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                        BABYLON.Animation.CreateAndStartAnimation("moveRight", itBOX, "position", 20, 15, itBOX.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
                     }
                 }   
                 if (inputStates.left) {
                     if (Car.laneIndex < lanes.length - 1) { // check if there's a lane to the left
                         Car.laneIndex++;
                         let toPosition = new BABYLON.Vector3(lanes[Car.laneIndex], Car.position.y, Car.position.z);
-                        BABYLON.Animation.CreateAndStartAnimation("moveLeft", Car, "position", 30, 15, Car.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
-                        BABYLON.Animation.CreateAndStartAnimation("moveLeft", itBOX, "position", 30, 15, itBOX.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                        BABYLON.Animation.CreateAndStartAnimation("moveLeft", Car, "position", 20, 15, Car.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                        BABYLON.Animation.CreateAndStartAnimation("moveLeft", itBOX, "position", 20, 15, itBOX.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
                     }
                 }
                 if (inputStates.down) {
 					if (Car.laneIndex == 0 || Car.laneIndex == lanes.length - 1) { // check if there's a lane to the middle
 						Car.laneIndex = 1;
 						let toPosition = new BABYLON.Vector3(lanes[Car.laneIndex], Car.position.y, Car.position.z);
-						BABYLON.Animation.CreateAndStartAnimation("moveMiddle", Car, "position", 30, 15, Car.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
-                        BABYLON.Animation.CreateAndStartAnimation("moveMiddle", itBOX, "position", 30, 15, itBOX.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+						BABYLON.Animation.CreateAndStartAnimation("moveMiddle", Car, "position", 20, 15, Car.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                        BABYLON.Animation.CreateAndStartAnimation("moveMiddle", itBOX, "position", 20, 15, itBOX.position, toPosition, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
 
 					}
 				}				

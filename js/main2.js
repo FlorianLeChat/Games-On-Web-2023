@@ -54,6 +54,7 @@ export async function startGame2() {
 
 async function createScene() {
     let scene = new BABYLON.Scene( engine );
+    let assetsManager = new BABYLON.AssetsManager(scene); // Créez un nouvel objet assetsManager
     let ground = createGround( scene );
     let sidegrounds = createSideGrounds( scene );
 
@@ -73,6 +74,24 @@ async function createScene() {
   
     createLights( scene );
     
+    // Ajoutez la tâche de chargement de fichier binaire à l'assetsManager
+    let binaryTask = assetsManager.addBinaryFileTask("mood", "sounds/rayah.wav");
+    binaryTask.onSuccess = function (task) {
+        if (!scene.assets) {
+            scene.assets = {}; // Créez la propriété assets si elle n'existe pas déjà
+        }
+        scene.assets.moodMusic = new BABYLON.Sound(
+            "mood",
+            task.data,
+            scene,
+            null,
+            {
+                loop: true,
+                autoplay: true,
+            }
+        );
+    };
+
     // Add obstacles
     function addObstacle() {
         // create first obstacle
@@ -116,65 +135,27 @@ async function createScene() {
         setInterval(addObstacle, 3000);
     }, 4000);
 
+    await assetsManager.loadAsync(); // Attendez le chargement de tous les actifs
+
     return scene;
   }
-
-  // function createGround(scene) {
-  //   const groundOptions = {
-  //     width: 2000,
-  //     height: 20000,
-  //     subdivisions: 50,
-  //     minHeight: -50,
-  //     maxHeight: 50,
-  //     onReady: onGroundCreated,
-  //   };
-  //   //scene is optional and defaults to the current scene
-  //   const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap(
-  //     "gdhm",
-  //     "images/hmap2.jpg",
-  //     groundOptions,
-  //     scene
-  //   );
-  
-  //   function onGroundCreated() {
-  //     const groundMaterial = new BABYLON.StandardMaterial(
-  //       "groundMaterial",
-  //       scene
-  //     );
-  //     groundMaterial.diffuseTexture = new BABYLON.Texture("images/grass.jpeg");
-  //     ground.material = groundMaterial;
-  //     // to be taken into account by collision detection
-  //     ground.checkCollisions = true;
-  //     //groundMaterial.wireframe=true;
-  //     groundMaterial.diffuseTexture.uScale = 100;
-  //     groundMaterial.diffuseTexture.vScale = 1000;
-  //     // for physic engine
-  //     ground.physicsImpostor = new BABYLON.PhysicsImpostor(
-  //       ground,
-  //       BABYLON.PhysicsImpostor.HeightmapImpostor,
-  //       { mass: 0 },
-  //       scene
-  //     );
-  //   }
-  //   return ground;
-  // }
   
 function createGround(scene) {
     const groundOptions = {
         width: 100,
         height: 21000,
         subdivisions: 20,
-        minHeight: -2,
-        maxHeight: 2,
+        minHeight: 0,
+        maxHeight: 0,
         onReady: onGroundCreated,
     };
     const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap("ground", "images/hmap2.jpeg", groundOptions, scene);
 
     function onGroundCreated() {
         const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
-        groundMaterial.diffuseTexture = new BABYLON.Texture("images/cloud1.jpeg", scene);
+        groundMaterial.diffuseTexture = new BABYLON.Texture("images/terre.jpeg", scene);
         groundMaterial.diffuseTexture.uScale = 1;
-        groundMaterial.diffuseTexture.vScale = 2;
+        groundMaterial.diffuseTexture.vScale = 200;
         ground.material = groundMaterial;
         ground.checkCollisions = true;    
     }
@@ -187,7 +168,7 @@ function createSideGrounds(scene) {
     height: 20000,
     subdivisions: 50,
     minHeight: -50,
-    maxHeight: 15,
+    maxHeight: 22,
     onReady: onSideGroundsCreated,
   };
 
@@ -260,6 +241,17 @@ function createitBOX(scene) {
 
 function createObstacle(scene, itBOX) {
     let obstacle = BABYLON.Mesh.CreateBox("obstacle", 2, scene);
+
+    const collisionSound = new BABYLON.Sound(
+        "collisionSound",
+        "sounds/over.wav",
+        scene,
+        null,
+        {
+          loop: false,
+          autoplay: false
+        }
+      );
     const actionManager = new BABYLON.ActionManager(scene);
         actionManager.registerAction(
             new BABYLON.ExecuteCodeAction(
@@ -281,7 +273,7 @@ function createObstacle(scene, itBOX) {
                     
                     // Add distance text to gameResult div
                     const distanceText1 = document.createElement("p");
-                    distanceText1.textContent =`GAME OVER`;
+                    distanceText1.textContent =`SO CLOSE`;
                     distanceText1.style.fontFamily = "'Press Start 2P', cursive";
                     distanceText1.style.color = "rgb(147,138,138)";
                     distanceText1.style.fontSize = "50px";
@@ -313,26 +305,13 @@ function createObstacle(scene, itBOX) {
                         groundSpeed = 1; // réinitialise la vitesse
                         startGame2(); // redémarre le jeu
                     });           
-                    
-                    // // Add End Game button to gameResult div
-                    // const endGame = document.createElement("button");
-                    // endGame.textContent = "End Game";
-                    // gameResult.appendChild(endGame);
-                    // endGame.style.fontFamily = "'Press Start 2P', cursive";
-                    // endGame.style.marginLeft = "10px";
-                    // endGame.style.padding = "10px 20px";
-                    // endGame.style.fontSize = "24px";
-                    // endGame.style.borderRadius = "10px";
-                    // endGame.style.background = "#ddd";
-                    // endGame.style.color = "#000";
-                    // endGame.style.cursor = "pointer";
-                    // endGame.addEventListener("click", () => {
-                    //     // Supprime la div gameResult de la page
-                    //     gameResult.remove();
-                    //     // Lance la nouvelle scène startGame2
-                    //     startGame2();
-                    // });
-                    
+
+                    collisionSound.play(); // Joue le son de collision
+
+                    // Arrête la lecture du son de fond
+                    if (scene.assets && scene.assets.moodMusic) {
+                        scene.assets.moodMusic.stop();
+                    }
 
                     // Stop the game
                     engine.stopRenderLoop();
@@ -340,7 +319,7 @@ function createObstacle(scene, itBOX) {
             )
         );
     obstacle.actionManager = actionManager;
-    obstacle.scaling = new BABYLON.Vector3(6, 6, 6);
+    obstacle.scaling = new BABYLON.Vector3(11, 8, 10);
   
     let lane = Math.floor(Math.random() * 3); // randomly choose a lane (0, 1, or 2)
     let x = -30 + lane * 30; // compute the x position based on the lane
@@ -349,7 +328,7 @@ function createObstacle(scene, itBOX) {
     obstacle.checkCollisions = true;
   
     let material = new BABYLON.StandardMaterial("obstacleMaterial", scene);
-    material.diffuseTexture = new BABYLON.Texture("images/barils.png", scene);
+    material.diffuseTexture = new BABYLON.Texture("images/rock.png", scene);
     material.diffuseTexture.hasAlpha = true; // Vérifie si la texture a une canal alpha (transparence)
     obstacle.material = material;
   
@@ -357,7 +336,7 @@ function createObstacle(scene, itBOX) {
     let animation = new BABYLON.Animation("obstacleAnimation", "position.y", 60, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
     let keys = [];
     keys.push({frame: 0, value: 50}); // starting position
-    keys.push({frame: 60, value: 12}); // ending position
+    keys.push({frame: 60, value: 18}); // ending position
     animation.setKeys(keys);
     obstacle.animations.push(animation);
   
