@@ -2,73 +2,169 @@ let canvas;
 let engine;
 let scene;
 let inputStates = {};
-let groundSpeed = 5;
+let groundSpeed = 2;
 let distanceText;
+let rulesText;
+let speedText;
+let timeText;
 let distance = 0;
 import { startGame2 } from "./main2.js";
 
 window.onload = () => {
-  const startPage = document.querySelector("#start-page");
-  const startButton = document.querySelector("#start-button");
-  startButton.addEventListener("click", startGame);
-  startPage.style.display = "block";
-  startPage.classList.add('fade-in');
-  startButton.addEventListener('mouseover', () => {
-    startButton.classList.add('animated', 'pulse');
-  });
+    const startPage = document.querySelector("#start-page");
+    const startButton = document.querySelector("#start-button");
+    const playButton = document.querySelector("#playButton");
   
-  startButton.addEventListener('animationend', () => {
-    startButton.classList.remove('animated', 'pulse');
-  });
-};
+    startButton.addEventListener("click", startGame);
+    startPage.style.display = "block";
+    startPage.classList.add("fade-in");
+    startButton.addEventListener("mouseover", () => {
+      startButton.classList.add("animated", "pulse");
+    });
+  
+    startButton.addEventListener("animationend", () => {
+      startButton.classList.remove("animated", "pulse");
+    });
+  
+    playButton.addEventListener("click", () => {
+      const homeMusic = document.querySelector("#homeMusic");
+      homeMusic.play();
+    });
+  };
+  
 
-async function startGame() {
-  const startPage = document.querySelector("#start-page");
-  startPage.style.display = "none";
+  export async function startGame() {
+    const startPage = document.querySelector("#start-page");
+    startPage.style.display = "none";
+    
+    // Arrêter la musique d'accueil si elle existe
+    const homeMusic = document.querySelector("#homeMusic");
+    if (homeMusic) {
+      homeMusic.pause();
+    }
+  
     canvas = document.querySelector("#myCanvas");
     engine = new BABYLON.Engine(canvas, true);
     scene = await createScene();
-
+  
     modifySettings();
-
+  
     let Car = scene.getMeshByName("Car");
 
     distanceText = document.createElement("div");
     distanceText.id = "distanceText";
     document.body.appendChild(distanceText);
-
     // Set the style of the distanceText element
-    const style = distanceText.style;
-    style.position = "absolute";
-    style.left = "10px";
-    style.top = "10px";
-    style.color = "white";
-    style.fontSize = "24px";
-    style.fontFamily = "'Press Start 2P', cursive";
+    const distanceStyle = distanceText.style;
+    distanceStyle.position = "absolute";
+    distanceStyle.left = "15px";
+    distanceStyle.top = "40px";
+    distanceStyle.color = "white";
+    distanceStyle.fontSize = "30px";
+    distanceStyle.fontFamily = "'Press Start 2P', cursive";
+    distanceStyle.fontWeight = "bold";
+    distanceStyle.textShadow = "2px 2px 2px black"; 
 
+    rulesText = document.createElement("div");
+    rulesText.id = "rulesText";
+    document.body.appendChild(rulesText);
+    const rulesStyle = rulesText.style;
+    rulesStyle.position = "absolute";
+    rulesStyle.alignContent = "center";
+    rulesStyle.right = "20px";
+    rulesStyle.bottom = "20px";
+    rulesStyle.color = "white";
+    rulesStyle.fontSize = "24px";
+    rulesStyle.fontFamily = "'Press Start 2P', cursive";
+    rulesStyle.textShadow = "2px 2px 2px black"; 
+
+    
+    rulesText.innerHTML = `CONTROLLERS <br><br>
+                          <i class="fas fa-arrow-left"></i> = LEFT lane <br>
+                          <i class="fas fa-arrow-down"></i> = MIDDLE lane <br>
+                          <i class="fas fa-arrow-right"></i> = RIGHT lane`;
+
+    // Créer le texte de vitesse
+    speedText = document.createElement("div");
+    speedText.id = "speedometer";
+    document.body.appendChild(speedText);
+    // Définir le style du texte de vitesse
+    const speedStyle = speedText.style;
+    speedStyle.position = "absolute";
+    speedStyle.left = "10px";
+    speedStyle.bottom = "10px";
+    speedStyle.color = "white";
+    speedStyle.fontSize = "30px";
+    speedStyle.fontFamily = "'Press Start 2P', cursive";
+    speedStyle.textShadow = "0.5px 0.5px 0.5px white"; 
+    function updateSpeedometer(speed) {
+        const speedometer = document.querySelector("#speedometer");
+        speedometer.textContent = `${speed.toFixed(0)} km/h`;
+      }
+      
+    timeText = document.createElement("div");
+    timeText.id = "chronometer";
+    document.body.appendChild(timeText);
+    const timeStyle = timeText.style;
+    timeStyle.position = "absolute";
+    timeStyle.left = "380px";
+    timeStyle.top = "3px";
+    timeStyle.width = "110px"; // Ajustez la taille du chronomètre selon vos besoins
+    timeStyle.height = "100px"; // Ajustez la taille du chronomètre selon vos besoins
+    timeStyle.borderRadius = "50%"; // Rend le fond du chronomètre rond
+    timeStyle.backgroundColor = "#1f1f1f"; // Couleur de fond du chronomètre
+    timeStyle.border = "2.5px solid #ffffff"
+    timeStyle.color = "white";
+    timeStyle.fontSize = "20px";
+    timeStyle.fontFamily = "'Press Start 2P', cursive";
+    timeStyle.textShadow = "1px 1px 1px white"; 
+    timeStyle.textAlign = "center";
+    timeStyle.lineHeight = "100px"; // Centre le texte verticalement dans le chronomètre
+    function updateChronometer(time) {
+    const chronometer = document.querySelector("#chronometer");
+    chronometer.textContent = time;
+    }            
+      
+        
+    let startTime = performance.now(); 
 
     engine.runRenderLoop(async () => {
-        let deltaTime = engine.getDeltaTime();
+      let deltaTime = engine.getDeltaTime();
+  
+      Car.move();
+  
+      scene.meshes.forEach((mesh) => {
+        if (
+          mesh.name == "ground" ||
+          mesh.name == "obstacle" ||
+          mesh.name == "leftSideGround" ||
+          mesh.name == "rightSideGround"
+        ) {
+          mesh.position.z += groundSpeed;
+        }
+      });
+      groundSpeed += 0.001;
 
-        Car.move();
-          
-          scene.meshes.forEach((mesh) => {
-            if (mesh.name == "ground" || mesh.name == "obstacle" || mesh.name == "leftSideGround" || mesh.name == "rightSideGround" || mesh.name == "palm" || mesh.name == "palmtree") {
-              mesh.position.z += groundSpeed;
-            }
-          });
-          
+    // Mise à jour du texte de distance
+    distance += groundSpeed * deltaTime / 1000;
+    const distanceText = document.querySelector("#distanceText");
+    distanceText.textContent = `${distance.toFixed(0)} mètres`;
 
-        groundSpeed += 0.0005;
-       
-        // Update distance
-        distance += groundSpeed * deltaTime / 1000;
-        const distanceText = document.querySelector("#distanceText");
-        distanceText.textContent = `Distance : ${distance.toFixed(0)} mètres`;
+    // Mise à jour du texte de vitesse
+    updateSpeedometer(groundSpeed * 10);
 
-        scene.render();
+    // Mise à jour du texte du chronomètre
+    const currentTime = performance.now(); // Temps actuel
+    const elapsedSeconds = Math.floor((currentTime - startTime) / 1000); // Temps écoulé en secondes arrondi à la valeur inférieure
+    let minutes = Math.floor(elapsedSeconds / 60);
+    let seconds = elapsedSeconds % 60;
+    // Formater le temps avec des zéros devant les chiffres si nécessaire
+    const formattedTime = `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    updateChronometer(formattedTime);
+        
+      scene.render();
     });
-}
+  }
 
 async function createScene() {
     let scene = new BABYLON.Scene(engine);
@@ -107,7 +203,23 @@ async function createScene() {
             }
         );
     };
-    
+    let carTask = assetsManager.addBinaryFileTask("car", "sounds/car.wav");
+    carTask.onSuccess = function (task) {
+        if (!scene.assets) {
+            scene.assets = {}; // Créez la propriété assets si elle n'existe pas déjà
+        }
+        scene.assets.carMusic = new BABYLON.Sound(
+            "car",
+            task.data,
+            scene,
+            null,
+            {
+                loop: true,
+                autoplay: true,
+            }
+        );
+    };
+
   // Add obstacles
     function addObstacle() {
         // create first obstacle
@@ -148,7 +260,7 @@ async function createScene() {
     // Wait for 8 seconds before adding obstacles
     setTimeout(() => {
         addObstacle();
-        setInterval(addObstacle, 4000);
+        setInterval(addObstacle, 2000);
     }, 8000);
 
     await assetsManager.loadAsync(); // Attendez le chargement de tous les actifs
@@ -260,7 +372,7 @@ function createObstacle(scene, itBOX) {
     
     const collisionSound = new BABYLON.Sound(
         "collisionSound",
-        "sounds/over.wav",
+        "sounds/ohSHIT.wav",
         scene,
         null,
         {
@@ -278,6 +390,9 @@ function createObstacle(scene, itBOX) {
                 },
                 (evt) => {
                     distanceText.remove();
+                    rulesText.remove();
+                    speedText.remove();
+                    timeText.remove();
 
                     // Create a div to hold distance and buttons
                     const gameResult = document.createElement("div");
@@ -294,6 +409,7 @@ function createObstacle(scene, itBOX) {
                     distanceText1.style.fontFamily = "'Press Start 2P', cursive";
                     distanceText1.style.color = "rgb(147,138,138)";
                     distanceText1.style.fontSize = "50px";
+                    distanceText1.style.textShadow = "1px 1px 1px white"; 
                     gameResult.appendChild(distanceText1);
                     
 
@@ -303,6 +419,7 @@ function createObstacle(scene, itBOX) {
                     distanceText2.style.fontFamily = "'Press Start 2P', cursive";
                     distanceText2.style.color = "rgb(147,138,138)";
                     distanceText2.style.fontSize = "40px";
+                    distanceText2.style.textShadow = "1px 1px 1px white"; 
                     gameResult.appendChild(distanceText2);
                     
                     // Add Try Again button to gameResult div
@@ -320,7 +437,8 @@ function createObstacle(scene, itBOX) {
                     tryAgain.addEventListener("click", () => {
                         gameResult.remove(); // supprime la div gameResult de la page
                         distance = 0; // réinitialise la distance
-                        groundSpeed = 1; // réinitialise la vitesse
+                        groundSpeed = 2; // réinitialise la vitesse
+                        
                         startGame(); // redémarre le jeu
                     });           
                     
@@ -348,14 +466,16 @@ function createObstacle(scene, itBOX) {
                     if (scene.assets && scene.assets.moodMusic) {
                         scene.assets.moodMusic.stop();
                     }
-
+                    if (scene.assets && scene.assets.carMusic) {
+                        scene.assets.carMusic.stop();
+                    }
                     // Stop the game
                     engine.stopRenderLoop();
                     }
             )
         );
     obstacle.actionManager = actionManager;
-    obstacle.scaling = new BABYLON.Vector3(10, 10, 10);
+    obstacle.scaling = new BABYLON.Vector3(12, 12, 0.01);
   
     let lane = Math.floor(Math.random() * 3); // randomly choose a lane (0, 1, or 2)
     let x = -30 + lane * 30; // compute the x position based on the lane
@@ -363,20 +483,17 @@ function createObstacle(scene, itBOX) {
   
     obstacle.checkCollisions = true;
     
-
-    // create a material for the obstacle
-    
-  
+    // create a material for the obstacle  
     let material = new BABYLON.StandardMaterial("obstacleMaterial", scene);
     material.diffuseTexture = new BABYLON.Texture("images/barils.png", scene);
     material.diffuseTexture.hasAlpha = true; // Vérifie si la texture a une canal alpha (transparence)
     obstacle.material = material;
   
     // animate the obstacle's fall
-    let animation = new BABYLON.Animation("obstacleAnimation", "position.y", 60, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+    let animation = new BABYLON.Animation("obstacleAnimation", "position.y", 90, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
     let keys = [];
     keys.push({frame: 0, value: 50}); // starting position
-    keys.push({frame: 60, value: 5}); // ending position
+    keys.push({frame: 60, value: 6}); // ending position
     animation.setKeys(keys);
     obstacle.animations.push(animation);
   
