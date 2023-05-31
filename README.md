@@ -42,11 +42,11 @@ Votre objectif est d'éviter les obstacles qui apparaissent sur la route tout en
 
 Notre jeu de course avec Babylon.js propose les fonctionnalités suivantes :
 
-    - <ins>Graphismes 3D immersifs</ins> : Profitez d'un environnement de jeu réaliste avec des graphismes en 3D de haute qualité grâce à Babylon.js.
-    - <ins>Moteur physique réaliste</ins> : La physique réaliste de la voiture et des obstacles garantit une expérience de jeu authentique.
-    - <ins>Système de score</ins> : Votre score est calculé en fonction de la distance parcourue et de la durée de votre partie. Essayez d'obtenir un score élevé et battez votre propre record !
-    - <ins>Progression de la vitesse</ins> : La vitesse de la voiture augmente progressivement, mettant vos réflexes à l'épreuve à mesure que vous progressez.
-    - <ins>Détection de collision</ins> : Les collisions avec les obstacles sont détectées de manière précise, ce qui met fin à la partie lorsque cela se produit.
+    - Graphismes 3D immersifs : Profitez d'un environnement de jeu réaliste avec des graphismes en 3D de haute qualité grâce à Babylon.js.
+    - Moteur physique réaliste : La physique réaliste de la voiture et des obstacles garantit une expérience de jeu authentique.
+    - Système de score : Votre score est calculé en fonction de la distance parcourue et de la durée de votre partie. Essayez d'obtenir un score élevé et battez votre propre record !
+    - Progression de la vitesse : La vitesse de la voiture augmente progressivement, mettant vos réflexes à l'épreuve à mesure que vous progressez.
+    - Détection de collision : Les collisions avec les obstacles sont détectées de manière précise, ce qui met fin à la partie lorsque cela se produit.
 
 ## Objectif ultime : ÊTRE GREEN !
 
