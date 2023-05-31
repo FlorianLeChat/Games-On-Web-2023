@@ -8,6 +8,7 @@ let rulesText;
 let speedText;
 let timeText;
 let distance = 0;
+let isMouseLocked = false;
 
 export async function startGame2() {
     canvas = document.querySelector("#myCanvas");
@@ -77,8 +78,8 @@ export async function startGame2() {
     timeStyle.position = "absolute";
     timeStyle.left = "350px";
     timeStyle.top = "2px";
-    timeStyle.width = "110px"; // Ajustez la taille du chronomètre selon vos besoins
-    timeStyle.height = "100px"; // Ajustez la taille du chronomètre selon vos besoins
+    timeStyle.width = "110px"; // Ajustez la taille du chronomètre
+    timeStyle.height = "100px"; // Ajustez la taille du chronomètre
     timeStyle.borderRadius = "50%"; // Rend le fond du chronomètre rond
     timeStyle.backgroundColor = "#1f1f1f"; // Couleur de fond du chronomètre
     timeStyle.border = "2.5px solid #ffffff"
@@ -163,8 +164,8 @@ export async function startGame2() {
           victoryMessage.remove();
         };
       
-        // Définissez un délai pour la durée de l'animation (par exemple, 3 secondes)
-        setTimeout(removeVictoryAnimation, 15000);
+        // Définissez un délai pour la durée de l'animation
+        setTimeout(removeVictoryAnimation, 20000);
       }
       
       
@@ -296,6 +297,7 @@ async function createScene() {
                 autoplay: true,
             }
         );
+        scene.assets.moodMusic.setVolume(0.5);
     };
     let birdsTask = assetsManager.addBinaryFileTask("birds", "sounds/birds.mp3");
     birdsTask.onSuccess = function (task) {
@@ -312,6 +314,7 @@ async function createScene() {
                 autoplay: true,
             }
         );
+        scene.assets.birdsMusic.setVolume(0.1);
     };
     let bikeTask = assetsManager.addBinaryFileTask("bike", "sounds/bike.wav");
     bikeTask.onSuccess = function (task) {
@@ -328,6 +331,7 @@ async function createScene() {
                 autoplay: true,
             }
         );
+        scene.assets.bikeMusic.setVolume(0.7);
     };
 
 
@@ -426,7 +430,7 @@ function createSideGrounds(scene) {
   // Create left side ground
   const leftSideGround = BABYLON.MeshBuilder.CreateGroundFromHeightMap(
     "leftSideGround",
-    "images/hmap2.jpg", // la hauteur de bikete est définie ici
+    "images/hmap2.jpg", 
     sideGroundOptions,
     scene
   );
@@ -437,7 +441,7 @@ function createSideGrounds(scene) {
   // Create right side ground
   const rightSideGround = BABYLON.MeshBuilder.CreateGroundFromHeightMap(
     "rightSideGround",
-    "images/hmap2.jpg", // la hauteur de bikete est définie ici
+    "images/hmap2.jpg", 
     sideGroundOptions,
     scene
   );
@@ -511,6 +515,9 @@ function createObstacle(scene, itBOX) {
                     parameter: { mesh: itBOX },
                 },
                 (evt) => {
+                    if (!isMouseLocked) {
+                        unlockPointer();
+                    }
                     distanceText.remove();
                     rulesText.remove();
                     speedText.remove();
@@ -722,7 +729,7 @@ async function createBike(scene, itBOX) {
 }
 
 function createBirds(scene) {
-    BABYLON.SceneLoader.ImportMesh("", "./models/", "birds1.glb", scene, function(newMeshes) {
+    BABYLON.SceneLoader.ImportMesh("", "./models/", "birds.glb", scene, function(newMeshes) {
         let Birds = newMeshes[0];
         Birds.name = "Birds";
         Birds.position.y = 35;
@@ -765,6 +772,12 @@ function createBird2(scene) {
     });
 }
 
+function unlockPointer() {
+    document.exitPointerLock();
+    isMouseLocked = false;
+    // Afficher la souris ici, par exemple :
+    canvas.style.cursor = "default";
+}
 function modifySettings() {
     // as soon as we click on the game window, the mouse pointer is "locked"
     // you will have to press ESC to unlock it
@@ -778,12 +791,15 @@ function modifySettings() {
     }
 
     document.addEventListener("pointerlockchange", () => {
-        let element = document.pointerLockElement || null;
-        if(element) {
-            // lets create a custom attribute
+        let element = document.pointerLockElement || null;
+        if (element) {
+            // la souris est verrouillée
             scene.alreadyLocked = true;
         } else {
+            // la souris est déverrouillée
             scene.alreadyLocked = false;
+            // Afficher la souris ici, par exemple :
+            canvas.style.cursor = "default";
         }
     })
 

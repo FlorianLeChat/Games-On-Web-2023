@@ -8,6 +8,7 @@ let rulesText;
 let speedText;
 let timeText;
 let distance = 0;
+let isMouseLocked = false;
 import { startGame2 } from "./main2.js";
 
 window.onload = () => {
@@ -31,7 +32,7 @@ window.onload = () => {
       homeMusic.play();
     });
   };
-  
+
 
   export async function startGame() {
     const startPage = document.querySelector("#start-page");
@@ -109,8 +110,8 @@ window.onload = () => {
     timeStyle.position = "absolute";
     timeStyle.left = "380px";
     timeStyle.top = "3px";
-    timeStyle.width = "110px"; // Ajustez la taille du chronomètre selon vos besoins
-    timeStyle.height = "100px"; // Ajustez la taille du chronomètre selon vos besoins
+    timeStyle.width = "110px"; // Ajustez la taille du chronomètre 
+    timeStyle.height = "100px"; // Ajustez la taille du chronomètre 
     timeStyle.borderRadius = "50%"; // Rend le fond du chronomètre rond
     timeStyle.backgroundColor = "#1f1f1f"; // Couleur de fond du chronomètre
     timeStyle.border = "2.5px solid #ffffff"
@@ -202,6 +203,7 @@ async function createScene() {
                 autoplay: true,
             }
         );
+        scene.assets.moodMusic.setVolume(0.2);
     };
     let carTask = assetsManager.addBinaryFileTask("car", "sounds/car.wav");
     carTask.onSuccess = function (task) {
@@ -218,6 +220,8 @@ async function createScene() {
                 autoplay: true,
             }
         );
+        // Définir le volume de la musique de la voiture (entre 0 et 1)
+        scene.assets.carMusic.setVolume(0.1);
     };
 
   // Add obstacles
@@ -257,11 +261,11 @@ async function createScene() {
         }, 7000);
     }    
     
-    // Wait for 8 seconds before adding obstacles
+    // Wait for 10 seconds before adding obstacles
     setTimeout(() => {
         addObstacle();
         setInterval(addObstacle, 2000);
-    }, 8000);
+    }, 10000);
 
     await assetsManager.loadAsync(); // Attendez le chargement de tous les actifs
 
@@ -351,7 +355,6 @@ function createSkybox(scene) {
        sMaterial.reflectionTexture = new BABYLON.CubeTexture("textures/TropicalSunnyDay", scene);
        sMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
   
-       // Création d'un cube avec la material adaptée
        var skybox = BABYLON.Mesh.CreateBox("skybox", 10000, scene);
        skybox.material = sMaterial;
        skybox.position.z = 400;
@@ -361,7 +364,7 @@ function createSkybox(scene) {
 
 function createitBOX(scene) {
     let itBOX = BABYLON.Mesh.CreateBox("itBOX", 2, scene);
-    itBOX.scaling = new BABYLON.Vector3(6, 4, 23);
+    itBOX.scaling = new BABYLON.Vector3(5, 3, 21);
     itBOX.visibility = false; // make the box invisible
     itBOX.checkCollisions = true;
     return itBOX;
@@ -389,6 +392,9 @@ function createObstacle(scene, itBOX) {
                     parameter: { mesh: itBOX },
                 },
                 (evt) => {
+                    if (!isMouseLocked) {
+                      unlockPointer();
+                    }
                     distanceText.remove();
                     rulesText.remove();
                     speedText.remove();
@@ -601,8 +607,6 @@ async function createCar(scene, itBOX) {
 
 					}
 				}				
-
-                // other movements (left, right, etc.) can be added here
             };
 
             Car.scaling = new BABYLON.Vector3(3, 3, 5);
@@ -617,7 +621,12 @@ async function createCar(scene, itBOX) {
     });
 }
 
-
+function unlockPointer() {
+  document.exitPointerLock();
+  isMouseLocked = false;
+  // Afficher la souris ici, par exemple :
+  canvas.style.cursor = "default";
+}
 function modifySettings() {
     // as soon as we click on the game window, the mouse pointer is "locked"
     // you will have to press ESC to unlock it
