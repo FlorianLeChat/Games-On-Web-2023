@@ -56,8 +56,6 @@ Une fois que vous avez terminé votre partie en entrant en collision avec un obs
 
 L'objectif ultime est de promouvoir l'idée de la mobilité douce et d'encourager les joueurs à adopter des modes de transport respectueux de l'environnement comme le vélo. Une fois que vous avez terminé la partie à vélo, nous vous invitons à arrêter de jouer et à prendre des mesures concrètes pour économiser de l'énergie.
 
-# BE GREEN
-
 ### Contribuer
 
 Si vous souhaitez contribuer à l'amélioration de notre jeu, vous pouvez suivre les étapes ci-dessous :
@@ -74,3 +72,6 @@ Si vous souhaitez contribuer à l'amélioration de notre jeu, vous pouvez suivre
     - Dans de rares cas, il peut y avoir des problèmes de collision ou d'affichage graphique.
 
 Si vous rencontrez des problèmes supplémentaires ou si vous avez des suggestions, n'hésitez pas à me les signaler. Ensemble, sauvons la planète et adoptons des pratiques respectueuses de l'environnement !
+
+
+# BE GREEN
