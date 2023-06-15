@@ -384,7 +384,7 @@ function createSkybox( scene )
 	// Création d"une material
 	const sMaterial = new BABYLON.StandardMaterial( "skyboxMaterial", scene );
 	sMaterial.backFaceCulling = false;
-	sMaterial.reflectionTexture = new BABYLON.CubeTexture( "textures/TropicalSunnyDay", scene );
+	sMaterial.reflectionTexture = new BABYLON.CubeTexture( "textures/evening/TropicalSunnyDay", scene );
 	sMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
 
 	const skybox = BABYLON.Mesh.CreateBox( "skybox", 10000, scene );
