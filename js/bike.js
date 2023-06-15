@@ -282,7 +282,7 @@ async function createScene()
 	createLights( scene );
 
 	// Ajoutez la tâche de chargement de fichier binaire à l'assetsManager
-	let missionPassedTask = assetsManager.addBinaryFileTask( "missionPassed", "sounds/MissionPassed.mp3" );
+	let missionPassedTask = assetsManager.addBinaryFileTask( "missionPassed", "sounds/mission_passed.mp3" );
 	missionPassedTask.onSuccess = function ( task )
 	{
 		if ( !scene.assets )
@@ -536,7 +536,7 @@ function createObstacle( scene, itBOX )
 
 	const collisionSound = new BABYLON.Sound(
 		"collisionSound",
-		"sounds/ohSHIT.wav",
+		"sounds/oh_shit.wav",
 		scene,
 		null, {
 		loop: false,

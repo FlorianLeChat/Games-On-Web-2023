@@ -408,7 +408,7 @@ function createObstacle( scene, itBOX )
 
 	const collisionSound = new BABYLON.Sound(
 		"collisionSound",
-		"sounds/ohSHIT.wav",
+		"sounds/oh_shit.wav",
 		scene,
 		null, {
 		loop: false,
@@ -608,7 +608,7 @@ async function createCar( scene, itBOX )
 {
 	return new Promise( resolve =>
 	{
-		BABYLON.SceneLoader.ImportMesh( "", "./models/", "Car.glb", scene, function ( newMeshes )
+		BABYLON.SceneLoader.ImportMesh( "", "./models/", "car.glb", scene, function ( newMeshes )
 		{
 			let Car = newMeshes[ 0 ];
 			Car.name = "Car";
