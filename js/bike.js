@@ -472,7 +472,6 @@ function createSideGrounds( scene )
 	leftSideGround.position.x = -1049; // Adjust position to left of main ground
 	leftSideGround.position.y = 2;
 
-
 	// Create right side ground
 	const rightSideGround = BABYLON.MeshBuilder.CreateGroundFromHeightMap(
 		"rightSideGround",
@@ -482,7 +481,6 @@ function createSideGrounds( scene )
 	);
 	rightSideGround.position.x = 1050; // Adjust position to right of main ground
 	rightSideGround.position.y = -1;
-
 
 	function onSideGroundsCreated()
 	{
@@ -510,13 +508,13 @@ function createSideGrounds( scene )
 function createSkybox( scene )
 {
 	// Création d"une material
-	var sMaterial = new BABYLON.StandardMaterial( "skyboxMaterial", scene );
+	const sMaterial = new BABYLON.StandardMaterial( "skyboxMaterial", scene );
 	sMaterial.backFaceCulling = false;
 	sMaterial.reflectionTexture = new BABYLON.CubeTexture( "textures/morning/TropicalSunnyDay", scene );
 	sMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
 
 	// Création d"un cube avec la material adaptée
-	var skybox = BABYLON.Mesh.CreateBox( "skybox", 10000, scene );
+	const skybox = BABYLON.Mesh.CreateBox( "skybox", 10000, scene );
 	skybox.material = sMaterial;
 	skybox.position.z = 400;
 	skybox.position.y = -200;
